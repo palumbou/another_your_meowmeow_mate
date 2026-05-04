@@ -182,9 +182,9 @@ src/
 - `master` — neutral persona, the supported main line.
 - `feature/queen-bianca-mode` (**this branch**) — Queen persona override
   is compiled in (`-DHYPRNEKO_QUEEN_MODE=ON` by default). The override
-  activates **at runtime** only when the current Linux username matches a
-  Bianca-variant (`bianca`, `bianchina`, `queenbianca`, `queen-bianca`,
-  `queen_bianca`; case-insensitive). Other users see the neutral persona
+  activates **at runtime only** when the current Linux username matches
+  exactly `bianca` or its English equivalent `white` (case-insensitive,
+  no nicknames or affixes). Every other user gets the neutral persona
   transparently — there is no chance of greeting an unrelated user as Queen.
   Output difference, when active:
 

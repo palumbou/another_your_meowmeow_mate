@@ -16,19 +16,17 @@ public:
 };
 
 #ifdef HYPRNEKO_QUEEN_MODE
-// Case-insensitive match of common Bianca variants. Kept tiny on purpose so
-// false positives stay rare (we don't want to greet random users as Queen).
+// Strict, case-insensitive match. We deliberately accept only the exact
+// username "bianca" or its English equivalent "white" — no nicknames or
+// affixed variants — to keep the activation surface tiny and to avoid
+// greeting an unrelated user as Queen by accident.
 bool is_bianca(std::string_view name) {
     auto lower = [](std::string s) {
         for (auto& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
         return s;
     };
     const std::string n = lower(std::string(name));
-    return n == "bianca"
-        || n == "bianchina"
-        || n == "queenbianca"
-        || n == "queen-bianca"
-        || n == "queen_bianca";
+    return n == "bianca" || n == "white";
 }
 
 class QueenPersona : public UserPersona {

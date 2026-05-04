@@ -176,11 +176,12 @@ src/
 - `master` — persona neutra, mainline supportata.
 - `feature/queen-bianca-mode` (**questo branch**) — l'override Queen persona
   è compilato di default (`-DHYPRNEKO_QUEEN_MODE=ON`). L'override si attiva
-  **a runtime** solo se lo username Linux corrente corrisponde a una
-  variante di Bianca (`bianca`, `bianchina`, `queenbianca`, `queen-bianca`,
-  `queen_bianca`; case-insensitive). Gli altri utenti vedono la persona
-  neutra in modo trasparente — nessun rischio di salutare per sbaglio un
-  utente non coinvolto come Queen. Differenze in output:
+  **a runtime, solo** quando lo username Linux corrente corrisponde
+  esattamente a `bianca` o al suo equivalente inglese `white`
+  (case-insensitive, niente diminutivi né affissi). Gli altri utenti
+  vedono la persona neutra in modo trasparente — nessun rischio di
+  salutare per sbaglio un utente non coinvolto come Queen. Differenze
+  in output:
 
   | dove      | neutra                        | queen                                    |
   |-----------|-------------------------------|------------------------------------------|
