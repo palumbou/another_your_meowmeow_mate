@@ -10,6 +10,8 @@ namespace hyprneko {
 // system username matches a Bianca-variant.
 class UserPersona {
 public:
+    virtual ~UserPersona() = default;
+
     static const UserPersona& active();
 
     // e.g. "Welcome back" / "Welcome back, Queen"
@@ -18,6 +20,13 @@ public:
     std::string_view tooltip_prefix() const { return tooltip_prefix_; }
     // Notification body suffix, e.g. "" / ", Queen"
     std::string_view honorific()      const { return honorific_;      }
+
+    // Builds the Pomodoro phase tooltip: "<prefix>: <phase> — <time> remaining"
+    // by default. Personas may override to use a different shape (e.g. the
+    // Queen persona uses a possessive form).
+    virtual std::string format_phase_tooltip(std::string_view phase_label,
+                                             std::string_view time_remaining,
+                                             bool paused) const;
 
 protected:
     UserPersona(std::string_view greeting,

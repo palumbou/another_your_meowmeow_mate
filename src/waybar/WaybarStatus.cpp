@@ -73,12 +73,9 @@ WaybarPayload waybar_payload(const PomodoroTimer& timer, bool pet_running) {
         default:                       phase_label = "session";         break;
     }
 
-    std::string suffix = (phase == PomodoroPhase::Paused) ? " (paused)" : "";
-
-    std::ostringstream tt;
-    tt << persona.tooltip_prefix() << ": " << phase_label << suffix
-       << " — " << format_mmss(rem) << " remaining";
-    p.tooltip = tt.str();
+    p.tooltip = persona.format_phase_tooltip(
+        phase_label, format_mmss(rem),
+        /*paused=*/phase == PomodoroPhase::Paused);
 
     p.css_class = (phase == PomodoroPhase::Paused) ? "paused"
                 : std::string(PomodoroTimer::phase_name(active));

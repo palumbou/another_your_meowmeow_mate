@@ -1,7 +1,9 @@
 #include "hyprneko/UserPersona.hpp"
 
+#include <cctype>
 #include <cstdlib>
 #include <pwd.h>
+#include <string>
 #include <unistd.h>
 
 namespace hyprneko {
@@ -37,6 +39,17 @@ std::string current_username() {
     if (const char* u = std::getenv("USER"); u && *u) return u;
     if (auto* pw = ::getpwuid(::getuid()); pw && pw->pw_name) return pw->pw_name;
     return {};
+}
+
+std::string UserPersona::format_phase_tooltip(std::string_view phase_label,
+                                              std::string_view time_remaining,
+                                              bool paused) const {
+    std::string out;
+    out.reserve(tooltip_prefix_.size() + phase_label.size() + time_remaining.size() + 32);
+    out.append(tooltip_prefix_).append(": ").append(phase_label);
+    if (paused) out.append(" (paused)");
+    out.append(" — ").append(time_remaining).append(" remaining");
+    return out;
 }
 
 const UserPersona& UserPersona::active() {
