@@ -200,6 +200,12 @@ void render_output_with(OverlaySurface::OutputSurface* o, OverlaySurface::Impl* 
     wl_callback_add_listener(o->frame_cb, &kFrameListener, o);
 
     wl_surface_commit(o->surface);
+
+    // Crucial: push the commit (and its frame_cb listener registration) to
+    // the compositor immediately. Without this the compositor never sees our
+    // updates between poll() wake-ups, which means it never sends a frame
+    // callback, which means we never re-render — total stall.
+    wl_display_flush(impl->display);
 }
 
 

@@ -1,4 +1,5 @@
 #include "hyprneko/App.hpp"
+#include "hyprneko/ProceduralCat.hpp"
 #include "hyprneko/UserPersona.hpp"
 #include "hyprneko/WaybarStatus.hpp"
 
@@ -206,11 +207,12 @@ void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
         }
     }
 
-    // Placeholder when no sprite is available: small filled circle so the
-    // user can see the pet position and validate the cursor-chase loop.
-    cairo_set_source_rgba(cr, 0.95, 0.55, 0.15, 0.85);
-    cairo_arc(cr, pet_.position.x, pet_.position.y, 12.0, 0, 6.28318);
-    cairo_fill(cr);
+    // No PNG sprite sheet — fall back to the built-in procedural cat.
+    // 2.0x scale gives a ~32x32 visible neko in compositor units.
+    draw_procedural_cat(cr, pet_.position.x, pet_.position.y,
+                        2.0,
+                        pet_.fsm.state(), pet_.fsm.direction(),
+                        pet_.fsm.frame());
     cairo_restore(cr);
     (void)w; (void)h;
 }
