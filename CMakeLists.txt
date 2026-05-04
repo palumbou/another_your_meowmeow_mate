@@ -34,6 +34,7 @@ wayland_protocol_generate(XDG_SHELL_SRC   "${XDG_SHELL_XML}"   xdg-shell)
 add_library(hyprneko_core STATIC
     src/app/App.cpp
     src/app/Config.cpp
+    src/app/Notifier.cpp
     src/wayland/OverlaySurface.cpp
     src/cursor/HyprlandCursorProvider.cpp
     src/cursor/NullCursorProvider.cpp

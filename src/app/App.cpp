@@ -62,7 +62,10 @@ App::App(Config cfg)
         }
     }
 
+    notifier_.set_enabled(cfg_.pomodoro_show_notifications);
+
     if (cfg_.enable_pomodoro && cfg_.pomodoro_auto_start) pomodoro_.start();
+    last_pomodoro_phase_ = pomodoro_.phase();
 }
 
 int App::run() {
@@ -72,11 +75,14 @@ int App::run() {
         return 1;
     }
 
-    // Center pet on first frame.
-    pet_.position.x = overlay_.width()  / 2.0;
-    pet_.position.y = overlay_.height() / 2.0;
+    // Center pet on the primary output (compositor-global coords).
+    const Rect primary = overlay_.primary_output_rect();
+    pet_.position.x = primary.x + primary.w / 2.0;
+    pet_.position.y = primary.y + primary.h / 2.0;
 
-    overlay_.set_draw([this](cairo_t* cr, int w, int h){ draw(cr, w, h); });
+    overlay_.set_draw([this](cairo_t* cr, int w, int h, int ox, int oy){
+        draw(cr, w, h, ox, oy);
+    });
 
     if (control_.bind_listen() < 0) {
         std::cerr << "hyprneko: control socket bind failed (errno="
@@ -126,6 +132,10 @@ int App::run() {
 
 void App::on_tick() {
     pomodoro_.tick(PomodoroTimer::Clock::now());
+    if (pomodoro_.phase() != last_pomodoro_phase_) {
+        on_pomodoro_phase_changed(last_pomodoro_phase_, pomodoro_.phase());
+        last_pomodoro_phase_ = pomodoro_.phase();
+    }
     if (cfg_.enable_pomodoro) pomodoro_behavior_.apply();
     if (cfg_.behavior == Behavior::CursorChase) {
         chase_->update(Pet::Clock::now());
@@ -135,8 +145,43 @@ void App::on_tick() {
     }
 }
 
-void App::draw(cairo_t* cr, int w, int h) {
+void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
+    if (!cfg_.pomodoro_show_notifications) return;
+    const auto& persona = UserPersona::active();
+    const std::string honor { persona.honorific() };
+    switch (to) {
+        case PomodoroPhase::Focus:
+            if (from == PomodoroPhase::Stopped) {
+                notifier_.notify("hyprneko",
+                    std::string("Focus session started") + honor + ".",
+                    "low");
+            } else {
+                notifier_.notify("hyprneko",
+                    std::string("Back to focus") + honor + ". You've got this.",
+                    "low");
+            }
+            break;
+        case PomodoroPhase::Break:
+            notifier_.notify("hyprneko",
+                std::string("Your break awaits") + honor + ".",
+                "normal");
+            break;
+        case PomodoroPhase::LongBreak:
+            notifier_.notify("hyprneko",
+                std::string("Long break time") + honor + " — go stretch.",
+                "normal");
+            break;
+        default: break;
+    }
+}
+
+void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
     if (!pet_visible_) return;
+    // Translate the surface's coordinate system so we can draw in
+    // compositor-global coordinates. Each per-output surface clips to its
+    // own bounds, so a pet on monitor 2 simply doesn't render on monitor 1.
+    cairo_save(cr);
+    cairo_translate(cr, -origin_x, -origin_y);
 
     if (sheet_ && animations_) {
         const auto* af = animations_->resolve(pet_.fsm.state(), pet_.fsm.direction());
@@ -156,13 +201,13 @@ void App::draw(cairo_t* cr, int w, int h) {
             cairo_rectangle(cr, 0, 0, sheet_->frame_w(), sheet_->frame_h());
             cairo_fill(cr);
             cairo_restore(cr);
+            cairo_restore(cr);
             return;
         }
     }
 
     // Placeholder when no sprite is available: small filled circle so the
     // user can see the pet position and validate the cursor-chase loop.
-    cairo_save(cr);
     cairo_set_source_rgba(cr, 0.95, 0.55, 0.15, 0.85);
     cairo_arc(cr, pet_.position.x, pet_.position.y, 12.0, 0, 6.28318);
     cairo_fill(cr);

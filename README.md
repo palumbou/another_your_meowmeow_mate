@@ -153,9 +153,6 @@ The CLI talks to the daemon over an AF_UNIX socket at
 
 ## Limits & non-goals
 
-- **One monitor in v1.** The layer surface binds to a single output (named or
-  compositor-chosen). Multi-monitor support means one surface per output and
-  per-output cursor mapping; planned, not done.
 - **Cursor backend is Hyprland-only in v1.** The wlroots and evdev providers
   are reserved stubs.
 - **No proprietary sprites.** Felix the Cat assets are not bundled and never
