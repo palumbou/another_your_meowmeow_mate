@@ -45,6 +45,7 @@ add_library(hyprneko_core STATIC
     src/pet/PomodoroBehavior.cpp
     src/animation/SpriteSheet.cpp
     src/animation/Animation.cpp
+    src/animation/ProceduralCat.cpp
     src/pomodoro/PomodoroTimer.cpp
     src/waybar/WaybarStatus.cpp
     src/persona/UserPersona.cpp
