@@ -1,0 +1,23 @@
+// Drop this into ~/.config/waybar/config (under "modules-right" or wherever
+// you want the module to appear) and merge with your existing config.
+//
+//     "modules-right": ["custom/hyprneko", "clock"],
+//
+// The module reads JSON from `hyprneko waybar-status` once a second. If no
+// daemon is running, hyprneko emits a "stopped" placeholder so the module
+// stays valid.
+
+{
+  "custom/hyprneko": {
+    "format": "{}",
+    "return-type": "json",
+    "interval": 1,
+    "exec": "hyprneko waybar-status",
+
+    "on-click":        "hyprneko pomodoro toggle",
+    "on-click-right":  "hyprneko toggle",
+    "on-click-middle": "hyprneko quit",
+
+    "tooltip": true
+  }
+}

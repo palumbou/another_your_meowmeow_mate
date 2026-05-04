@@ -1,0 +1,15 @@
+build/
+build-*/
+result
+result-*
+.cache/
+.direnv/
+.envrc.local
+compile_commands.json
+*.o
+*.a
+*.so
+*.swp
+*.swo
+.vscode/
+.idea/
