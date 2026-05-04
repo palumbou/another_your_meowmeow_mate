@@ -70,7 +70,10 @@ target_compile_definitions(hyprneko_core PUBLIC
     HYPRNEKO_VERSION="${PROJECT_VERSION}"
 )
 
-option(HYPRNEKO_QUEEN_MODE "Enable Queen persona override (feature branch)" OFF)
+# This branch defaults the Queen persona override to ON. It activates only at
+# runtime when the system username matches a Bianca-variant; other users get
+# the neutral persona transparently. Pass -DHYPRNEKO_QUEEN_MODE=OFF to disable.
+option(HYPRNEKO_QUEEN_MODE "Enable Queen persona override (feature branch)" ON)
 if(HYPRNEKO_QUEEN_MODE)
     target_compile_definitions(hyprneko_core PUBLIC HYPRNEKO_QUEEN_MODE=1)
 endif()

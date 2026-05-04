@@ -24,12 +24,29 @@ bool is_bianca(std::string_view name) {
         return s;
     };
     const std::string n = lower(std::string(name));
-    return n == "bianca" || n == "bianchina" || n == "queenbianca";
+    return n == "bianca"
+        || n == "bianchina"
+        || n == "queenbianca"
+        || n == "queen-bianca"
+        || n == "queen_bianca";
 }
 
 class QueenPersona : public UserPersona {
 public:
     QueenPersona() : UserPersona("Welcome back, Queen", "Queen's Pomodoro", ", Queen") {}
+
+    // Override the tooltip shape to use the possessive form requested in the
+    // spec: "Queen's focus session — 24:12 remaining".
+    std::string format_phase_tooltip(std::string_view phase_label,
+                                     std::string_view time_remaining,
+                                     bool paused) const override {
+        std::string out;
+        out.reserve(phase_label.size() + time_remaining.size() + 32);
+        out.append("Queen's ").append(phase_label);
+        if (paused) out.append(" (paused)");
+        out.append(" — ").append(time_remaining).append(" remaining");
+        return out;
+    }
 };
 #endif
 

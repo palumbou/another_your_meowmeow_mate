@@ -183,9 +183,21 @@ src/
 ## Branches
 
 - `master` — neutral persona, the supported main line.
-- `feature/queen-bianca-mode` — opt-in persona override that greets the user
-  as "Queen" when the system username is a Bianca-variant. Lives on its own
-  branch on purpose; not merged into master.
+- `feature/queen-bianca-mode` (**this branch**) — Queen persona override
+  is compiled in (`-DHYPRNEKO_QUEEN_MODE=ON` by default). The override
+  activates **at runtime** only when the current Linux username matches a
+  Bianca-variant (`bianca`, `bianchina`, `queenbianca`, `queen-bianca`,
+  `queen_bianca`; case-insensitive). Other users see the neutral persona
+  transparently — there is no chance of greeting an unrelated user as Queen.
+  Output difference, when active:
+
+  | location  | neutral                       | queen                                    |
+  |-----------|-------------------------------|------------------------------------------|
+  | greeting  | `Welcome back`                | `Welcome back, Queen`                    |
+  | tooltip   | `Pomodoro: focus session — …` | `Queen's focus session — …`              |
+  | honorific | (empty)                       | `, Queen` (used in future notifications) |
+
+  This branch is intentionally **not** merged into master and stays opt-in.
 
 ## License
 
