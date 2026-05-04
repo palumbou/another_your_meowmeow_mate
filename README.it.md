@@ -146,9 +146,6 @@ La CLI parla col daemon via socket AF_UNIX in
 
 ## Limiti e non-obiettivi
 
-- **Un solo monitor in v1.** L'overlay si lega a un singolo output (per nome
-  o scelto dal compositor). Il multi-monitor richiede un overlay per output
-  e mappatura cursore per output: pianificato, non fatto.
 - **Backend cursore solo Hyprland in v1.** I provider wlroots e evdev sono
   stub riservati.
 - **Niente sprite proprietari.** Gli asset Felix the Cat non sono inclusi e
