@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace hyprneko {
+namespace aymm {
 
 // Small abstraction for user-facing greetings/labels. Default impl is neutral.
 // The `feature/queen-bianca-mode` branch overrides the active set when the
@@ -44,4 +44,4 @@ private:
 // for the queen-mode override on the feature branch.
 std::string current_username();
 
-} // namespace hyprneko
+} // namespace aymm

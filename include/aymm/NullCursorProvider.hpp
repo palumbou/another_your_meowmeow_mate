@@ -1,8 +1,8 @@
 #pragma once
 
-#include "hyprneko/CursorProvider.hpp"
+#include "aymm/CursorProvider.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 // Always returns nullopt. Useful for non-Hyprland sessions or for tests.
 class NullCursorProvider final : public CursorProvider {
@@ -11,4 +11,4 @@ public:
     const char* name() const override { return "null"; }
 };
 
-} // namespace hyprneko
+} // namespace aymm

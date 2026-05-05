@@ -1,6 +1,6 @@
-#include "hyprneko/Animation.hpp"
+#include "aymm/Animation.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 const AnimationFrames* AnimationResolver::resolve(PetState s, Direction d) const {
     auto try_name = [&](std::string_view name) { return sheet_.animation(name); };
@@ -23,4 +23,4 @@ const AnimationFrames* AnimationResolver::resolve(PetState s, Direction d) const
     return try_name("idle");
 }
 
-} // namespace hyprneko
+} // namespace aymm

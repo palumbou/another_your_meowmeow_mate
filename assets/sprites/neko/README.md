@@ -19,7 +19,7 @@ This directory is a **template**. It does not ship a `neko.png` image because:
    PNG sprite sheet next to this file. Default file name: `neko.png`.
 2. Edit `sheet.conf` to map animation names to grid coordinates (see file
    comments).
-3. Point `sprite_dir` in your `hyprneko.conf` at this directory.
+3. Point `sprite_dir` in your `aymm.conf` at this directory.
 
 ## Suggested sources
 

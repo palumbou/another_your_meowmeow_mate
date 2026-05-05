@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace hyprneko {
+namespace aymm {
 
 struct CliResult {
     enum class Action {
@@ -26,4 +26,4 @@ CliResult parse_cli(int argc, char** argv);
 void print_help(std::ostream& os);
 void print_version(std::ostream& os);
 
-} // namespace hyprneko
+} // namespace aymm

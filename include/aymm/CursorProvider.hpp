@@ -2,7 +2,7 @@
 
 #include <optional>
 
-namespace hyprneko {
+namespace aymm {
 
 struct CursorPos {
     int x = 0;
@@ -27,4 +27,4 @@ public:
     virtual const char* name() const = 0;
 };
 
-} // namespace hyprneko
+} // namespace aymm

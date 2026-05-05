@@ -4,13 +4,13 @@
 #include <functional>
 #include <string>
 
-namespace hyprneko {
+namespace aymm {
 
 // Tiny line-based protocol over an AF_UNIX socket. Each line is a request
 // like `pomodoro:start` or `pet:toggle`; the daemon replies with a single
-// line. Used by `hyprneko <subcommand>` to talk to the running pet daemon.
+// line. Used by `aymm <subcommand>` to talk to the running pet daemon.
 //
-// Path: $XDG_RUNTIME_DIR/hyprneko/control.sock (falls back to /tmp).
+// Path: $XDG_RUNTIME_DIR/aymm/control.sock (falls back to /tmp).
 class ControlSocket {
 public:
     using Handler = std::function<std::string(const std::string& request)>;
@@ -35,4 +35,4 @@ private:
     std::filesystem::path bound_path_;
 };
 
-} // namespace hyprneko
+} // namespace aymm

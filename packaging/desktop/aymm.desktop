@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=Hyprneko
+Name=Another Your MeowMeow Mate
 GenericName=Desktop pet
 Comment=A Wayland-native desktop pet that chases your cursor under Hyprland
-Exec=hyprneko
-Icon=hyprneko
+Exec=aymm
+Icon=aymm
 Categories=Utility;
 Terminal=false
 NoDisplay=false

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "hyprneko/PomodoroTimer.hpp"
+#include "aymm/PomodoroTimer.hpp"
 
 #include <string>
 
-namespace hyprneko {
+namespace aymm {
 
 struct WaybarPayload {
     std::string text;
@@ -19,4 +19,4 @@ std::string waybar_json(const PomodoroTimer& timer, bool pet_running);
 
 WaybarPayload waybar_payload(const PomodoroTimer& timer, bool pet_running);
 
-} // namespace hyprneko
+} // namespace aymm

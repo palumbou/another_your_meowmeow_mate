@@ -1,4 +1,4 @@
-#include "hyprneko/UserPersona.hpp"
+#include "aymm/UserPersona.hpp"
 
 #include <cctype>
 #include <cstdlib>
@@ -6,7 +6,7 @@
 #include <string>
 #include <unistd.h>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -15,7 +15,7 @@ public:
     NeutralPersona() : UserPersona("Welcome back", "Pomodoro", "") {}
 };
 
-#ifdef HYPRNEKO_QUEEN_MODE
+#ifdef AYMM_QUEEN_MODE
 // Strict, case-insensitive match. We deliberately accept only the exact
 // username "bianca" or its English equivalent "white" — no nicknames or
 // affixed variants — to keep the activation surface tiny and to avoid
@@ -68,7 +68,7 @@ std::string UserPersona::format_phase_tooltip(std::string_view phase_label,
 }
 
 const UserPersona& UserPersona::active() {
-#ifdef HYPRNEKO_QUEEN_MODE
+#ifdef AYMM_QUEEN_MODE
     static const QueenPersona  queen;
     static const NeutralPersona neutral;
     return is_bianca(current_username()) ? static_cast<const UserPersona&>(queen)
@@ -79,4 +79,4 @@ const UserPersona& UserPersona::active() {
 #endif
 }
 
-} // namespace hyprneko
+} // namespace aymm

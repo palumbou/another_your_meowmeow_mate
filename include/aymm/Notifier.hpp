@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-namespace hyprneko {
+namespace aymm {
 
 // Fire-and-forget desktop notifications. Currently shells out to `notify-send`
 // (via posix_spawn so we don't block the render loop on fork). If
@@ -27,4 +27,4 @@ private:
     bool warned_once_ = false;
 };
 
-} // namespace hyprneko
+} // namespace aymm

@@ -1,11 +1,11 @@
-#include "hyprneko/SpriteSheet.hpp"
+#include "aymm/SpriteSheet.hpp"
 
 #include <cairo/cairo.h>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -79,4 +79,4 @@ const AnimationFrames* SpriteSheet::animation(std::string_view name) const {
     return it == animations_.end() ? nullptr : &it->second;
 }
 
-} // namespace hyprneko
+} // namespace aymm

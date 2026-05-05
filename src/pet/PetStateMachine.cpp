@@ -1,6 +1,6 @@
-#include "hyprneko/PetStateMachine.hpp"
+#include "aymm/PetStateMachine.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 std::string_view PetStateMachine::state_name(PetState s) {
     switch (s) {
@@ -70,4 +70,4 @@ void PetStateMachine::tick(TimePoint now) {
     }
 }
 
-} // namespace hyprneko
+} // namespace aymm

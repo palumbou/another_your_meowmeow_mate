@@ -1,10 +1,10 @@
 #pragma once
 
-#include "hyprneko/PetStateMachine.hpp"
+#include "aymm/PetStateMachine.hpp"
 
 typedef struct _cairo cairo_t;
 
-namespace hyprneko {
+namespace aymm {
 
 // Built-in fallback renderer used when no PNG sprite sheet is configured.
 // Draws a small cat with Cairo paths so we ship a recognizable pet without
@@ -20,4 +20,4 @@ void draw_procedural_cat(cairo_t* cr,
                          Direction direction,
                          int frame);
 
-} // namespace hyprneko
+} // namespace aymm

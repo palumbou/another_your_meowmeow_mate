@@ -1,4 +1,4 @@
-#include "hyprneko/Config.hpp"
+#include "aymm/Config.hpp"
 
 #include <cctype>
 #include <cstdlib>
@@ -6,7 +6,7 @@
 #include <sstream>
 #include <unordered_map>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -45,10 +45,10 @@ OverlayLayer parse_layer(const std::string& v) {
 
 std::filesystem::path Config::default_path() {
     if (const char* xdg = std::getenv("XDG_CONFIG_HOME"); xdg && *xdg) {
-        return std::filesystem::path(xdg) / "hyprneko" / "hyprneko.conf";
+        return std::filesystem::path(xdg) / "aymm" / "aymm.conf";
     }
     if (const char* home = std::getenv("HOME"); home && *home) {
-        return std::filesystem::path(home) / ".config" / "hyprneko" / "hyprneko.conf";
+        return std::filesystem::path(home) / ".config" / "aymm" / "aymm.conf";
     }
     return {};
 }
@@ -96,4 +96,4 @@ Config Config::load_or_default(const std::filesystem::path& path) {
     return Config{};
 }
 
-} // namespace hyprneko
+} // namespace aymm

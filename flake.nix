@@ -1,5 +1,5 @@
 {
-  description = "Hyprneko — Wayland-native desktop pet that chases your cursor under Hyprland";
+  description = "Another Your MeowMeow Mate — Wayland-native desktop pet that chases your cursor under Hyprland";
 
   inputs = {
     nixpkgs.url      = "github:NixOS/nixpkgs/nixos-unstable";
@@ -14,15 +14,15 @@
       in {
         packages = {
           default   = callPkg false;
-          hyprneko  = callPkg false;
+          aymm  = callPkg false;
           # Build with the Queen persona override compiled in. Kept here for
           # convenience; the upstream branch is feature/queen-bianca-mode.
-          hyprneko-queen = callPkg true;
+          aymm-queen = callPkg true;
         };
 
         apps.default = {
           type = "app";
-          program = "${self.packages.${system}.default}/bin/hyprneko";
+          program = "${self.packages.${system}.default}/bin/aymm";
         };
 
         devShells.default = pkgs.mkShell {

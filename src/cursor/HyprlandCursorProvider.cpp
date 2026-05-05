@@ -1,4 +1,4 @@
-#include "hyprneko/HyprlandCursorProvider.hpp"
+#include "aymm/HyprlandCursorProvider.hpp"
 
 #include <array>
 #include <cerrno>
@@ -11,7 +11,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -75,4 +75,4 @@ std::optional<CursorPos> HyprlandCursorProvider::poll() {
     return CursorPos{x, y};
 }
 
-} // namespace hyprneko
+} // namespace aymm

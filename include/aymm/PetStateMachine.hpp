@@ -3,7 +3,7 @@
 #include <chrono>
 #include <string_view>
 
-namespace hyprneko {
+namespace aymm {
 
 // 8-way direction set, matching oneko's NW/N/NE/W/E/SW/S/SE compass.
 enum class Direction : int {
@@ -51,4 +51,4 @@ private:
     TimePoint frame_advanced_{};
 };
 
-} // namespace hyprneko
+} // namespace aymm

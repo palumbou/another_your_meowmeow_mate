@@ -1,4 +1,4 @@
-# Hyprneko
+# Another Your MeowMeow Mate
 
 > **Lingue disponibili**: [English](README.md) | [Italiano (corrente)](README.it.md)
 
@@ -16,7 +16,7 @@ cerchio arancione così puoi validare il chase loop anche senza arte.
 
 I fork di oneko esistenti (es. [IreneKnapp/oneko](https://github.com/IreneKnapp/oneko),
 [glreno/oneko](https://github.com/glreno/oneko)) puntano direttamente a X11,
-e il port Java passa comunque da XWayland sui Linux moderni. Hyprneko è
+e il port Java passa comunque da XWayland sui Linux moderni. Another Your MeowMeow Mate è
 costruito su `wlr-layer-shell-unstable-v1` e `wayland-client`, quindi
 compone come overlay Wayland reale senza X server di mezzo. L'architettura
 si ispira a [furudbat/wayland-vpets](https://github.com/furudbat/wayland-vpets)
@@ -24,7 +24,7 @@ si ispira a [furudbat/wayland-vpets](https://github.com/furudbat/wayland-vpets)
 
 Il vincolo Wayland interessante è che la **posizione del cursore non è mai
 trasmessa ai client generici**, quindi il chase loop ha bisogno di una
-sorgente fuori-banda. Hyprneko la astrae dietro `CursorProvider`. Il
+sorgente fuori-banda. Another Your MeowMeow Mate la astrae dietro `CursorProvider`. Il
 backend di default parla con il socket IPC di Hyprland (senza fork di
 `hyprctl`). Vedi [docs/cursor-providers.md](docs/cursor-providers.md).
 
@@ -35,7 +35,7 @@ backend di default parla con il socket IPC di Hyprland (senza fork di
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-./build/hyprneko --version
+./build/aymm --version
 ```
 
 Pacchetti di sistema richiesti:
@@ -49,15 +49,15 @@ Pacchetti di sistema richiesti:
 ### Nix flake
 
 ```sh
-nix build .#hyprneko          # build
-nix run  .#hyprneko           # esegui
+nix build .#aymm          # build
+nix run  .#aymm           # esegui
 nix develop                   # shell di sviluppo con tutte le dipendenze
-nix build .#hyprneko-queen    # build con override Queen persona
+nix build .#aymm-queen    # build con override Queen persona
 ```
 
 ## Configurazione
 
-Copia `examples/hyprneko.conf` in `$XDG_CONFIG_HOME/hyprneko/hyprneko.conf`
+Copia `examples/aymm.conf` in `$XDG_CONFIG_HOME/aymm/aymm.conf`
 e personalizza. La reference completa è nel file di esempio. Estratto:
 
 ```ini
@@ -84,9 +84,9 @@ le note di licenza sul perché nessun PNG è incluso nel repo.
 
 ```
 # ~/.config/hypr/hyprland.conf
-exec-once = hyprneko
-layerrule = blur, hyprneko
-layerrule = ignorezero, hyprneko
+exec-once = aymm
+layerrule = blur, aymm
+layerrule = ignorezero, aymm
 ```
 
 Vedi [examples/hyprland-autostart.conf](examples/hyprland-autostart.conf).
@@ -94,12 +94,12 @@ Vedi [examples/hyprland-autostart.conf](examples/hyprland-autostart.conf).
 ## Pomodoro
 
 ```sh
-hyprneko pomodoro start         # inizia una sessione di focus
-hyprneko pomodoro pause
-hyprneko pomodoro resume
-hyprneko pomodoro skip          # salta alla fase successiva
-hyprneko pomodoro stop
-hyprneko pomodoro status        # leggibile umano
+aymm pomodoro start         # inizia una sessione di focus
+aymm pomodoro pause
+aymm pomodoro resume
+aymm pomodoro skip          # salta alla fase successiva
+aymm pomodoro stop
+aymm pomodoro status        # leggibile umano
 ```
 
 Fasi riportate da CLI / Waybar JSON: `focus`, `break`, `long_break`,
@@ -109,14 +109,14 @@ durante la pausa torna a velocità e idle distance di base.
 ## Modulo Waybar
 
 ```jsonc
-"custom/hyprneko": {
+"custom/aymm": {
   "format": "{}",
   "return-type": "json",
   "interval": 1,
-  "exec": "hyprneko waybar-status",
-  "on-click":        "hyprneko pomodoro toggle",
-  "on-click-right":  "hyprneko toggle",
-  "on-click-middle": "hyprneko quit"
+  "exec": "aymm waybar-status",
+  "on-click":        "aymm pomodoro toggle",
+  "on-click-right":  "aymm toggle",
+  "on-click-middle": "aymm quit"
 }
 ```
 
@@ -127,22 +127,22 @@ Payload prodotto:
   "class": "focus", "percentage": 80 }
 ```
 
-Se nessun daemon è in esecuzione, `hyprneko waybar-status` produce comunque
+Se nessun daemon è in esecuzione, `aymm waybar-status` produce comunque
 un payload `stopped` valido così Waybar non si lamenta.
 
 ## Sintesi CLI
 
 ```
-hyprneko [run]                Avvia il daemon del pet (default).
-hyprneko toggle               Mostra/nascondi su un daemon esistente.
-hyprneko quit                 Termina il daemon esistente.
-hyprneko status               Stato leggibile umano.
-hyprneko waybar-status        JSON Waybar one-shot.
-hyprneko pomodoro <cmd>       start | pause | resume | stop | skip | toggle | status
+aymm [run]                Avvia il daemon del pet (default).
+aymm toggle               Mostra/nascondi su un daemon esistente.
+aymm quit                 Termina il daemon esistente.
+aymm status               Stato leggibile umano.
+aymm waybar-status        JSON Waybar one-shot.
+aymm pomodoro <cmd>       start | pause | resume | stop | skip | toggle | status
 ```
 
 La CLI parla col daemon via socket AF_UNIX in
-`$XDG_RUNTIME_DIR/hyprneko/control.sock`.
+`$XDG_RUNTIME_DIR/aymm/control.sock`.
 
 ## Limiti e non-obiettivi
 
@@ -175,7 +175,7 @@ src/
 
 - `master` — persona neutra, mainline supportata.
 - `feature/queen-bianca-mode` (**questo branch**) — l'override Queen persona
-  è compilato di default (`-DHYPRNEKO_QUEEN_MODE=ON`). L'override si attiva
+  è compilato di default (`-DAYMM_QUEEN_MODE=ON`). L'override si attiva
   **a runtime, solo** quando lo username Linux corrente corrisponde
   esattamente a `bianca` o al suo equivalente inglese `white`
   (case-insensitive, niente diminutivi né affissi). Gli altri utenti
