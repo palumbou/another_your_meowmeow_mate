@@ -25,7 +25,12 @@ void print_help(std::ostream& os) {
 "                                       | skip | toggle | status\n"
 "\n"
 "Options:\n"
-"  --config <path>               Override config file path.\n"
+"  -c, --config <path>           Use the config file at <path> instead of\n"
+"                                $XDG_CONFIG_HOME/aymm/aymm.conf. Both forms\n"
+"                                accepted: '--config path' and '--config=path'.\n"
+"                                You can point this directly at the shipped\n"
+"                                example without copying first, e.g.\n"
+"                                  aymm -c examples/aymm.conf\n"
 "  --pomodoro                    Auto-start a Pomodoro session at launch.\n"
 "  -h, --help                    Show this help.\n"
 "  --version                     Print version and exit.\n";
@@ -43,8 +48,21 @@ CliResult parse_cli(int argc, char** argv) {
         const auto& a = args[i];
         if (a == "-h" || a == "--help")    { r.action = CliResult::Action::PrintHelp;    return r; }
         if (a == "--version")              { r.action = CliResult::Action::PrintVersion; return r; }
-        if (a == "--config" && i + 1 < args.size()) {
-            r.config_path = args[i + 1]; i += 2; continue;
+        // Config file path. Accept all four forms: '--config X', '--config=X',
+        // '-c X', '-c=X'.
+        if (a == "--config" || a == "-c") {
+            if (i + 1 < args.size()) {
+                r.config_path = args[i + 1]; i += 2; continue;
+            }
+            r.action = CliResult::Action::Error;
+            r.error  = a + " needs a path argument";
+            return r;
+        }
+        if (a.rfind("--config=", 0) == 0) {
+            r.config_path = a.substr(9); ++i; continue;
+        }
+        if (a.rfind("-c=", 0) == 0) {
+            r.config_path = a.substr(3); ++i; continue;
         }
         if (a == "--pomodoro") {
             r.action = CliResult::Action::RunDaemon;

@@ -57,8 +57,18 @@ nix build .#aymm-queen    # build con override Queen persona
 
 ## Configurazione
 
-Copia `examples/aymm.conf` in `$XDG_CONFIG_HOME/aymm/aymm.conf`
-e personalizza. La reference completa è nel file di esempio. Estratto:
+Di default `aymm` cerca `$XDG_CONFIG_HOME/aymm/aymm.conf` (tipicamente
+`~/.config/aymm/aymm.conf`). Il file `examples/aymm.conf` è un template
+completamente commentato — copialo lì e modificalo, oppure punta `aymm` a
+qualsiasi path con `-c` / `--config`:
+
+```sh
+aymm -c examples/aymm.conf            # prova l'esempio senza copiarlo
+aymm --config /etc/aymm/site.conf     # config a livello sistema
+aymm --config=~/aymm.conf             # accetta anche la forma con =
+```
+
+La reference completa è nel file di esempio. Estratto:
 
 ```ini
 animation_name=neko
