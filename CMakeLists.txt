@@ -46,6 +46,7 @@ add_library(aymm_core STATIC
     src/animation/SpriteSheet.cpp
     src/animation/Animation.cpp
     src/animation/ProceduralCat.cpp
+    src/animation/SpeechBubble.cpp
     src/pomodoro/PomodoroTimer.cpp
     src/waybar/WaybarStatus.cpp
     src/persona/UserPersona.cpp
