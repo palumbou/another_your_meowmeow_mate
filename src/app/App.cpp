@@ -67,6 +67,15 @@ App::App(Config cfg)
 
     if (cfg_.enable_pomodoro && cfg_.pomodoro_auto_start) pomodoro_.start();
     last_pomodoro_phase_ = pomodoro_.phase();
+
+    // Greet on startup. notify-send is fire-and-forget; if it isn't on PATH
+    // the Notifier silently disables itself with a one-time stderr line.
+    {
+        const auto& persona = UserPersona::active();
+        notifier_.notify("hyprneko",
+            std::string(persona.greeting()) + "!",
+            "low");
+    }
 }
 
 int App::run() {
@@ -132,17 +141,33 @@ int App::run() {
 }
 
 void App::on_tick() {
-    pomodoro_.tick(PomodoroTimer::Clock::now());
+    const auto now = PomodoroTimer::Clock::now();
+    pomodoro_.tick(now);
     if (pomodoro_.phase() != last_pomodoro_phase_) {
         on_pomodoro_phase_changed(last_pomodoro_phase_, pomodoro_.phase());
         last_pomodoro_phase_ = pomodoro_.phase();
     }
     if (cfg_.enable_pomodoro) pomodoro_behavior_.apply();
-    if (cfg_.behavior == Behavior::CursorChase) {
-        chase_->update(Pet::Clock::now());
+
+    // Pomodoro gate: during focus the cat sleeps in its basket; during break
+    // (and when the timer is off) it follows the cursor as configured.
+    bool should_chase = (cfg_.behavior == Behavior::CursorChase);
+    if (cfg_.enable_pomodoro && pomodoro_.phase() != PomodoroPhase::Stopped) {
+        const auto active = (pomodoro_.phase() == PomodoroPhase::Paused)
+                          ? pomodoro_.paused_phase() : pomodoro_.phase();
+        if (active == PomodoroPhase::Focus) {
+            if (pet_.fsm.state() != PetState::Sleep) {
+                pet_.fsm.set_state(PetState::Sleep, now);
+            }
+            should_chase = false;
+        }
+    }
+
+    if (should_chase) {
+        chase_->update(now);
     } else {
         pet_.has_target = false;
-        pet_.step(Pet::Clock::now());
+        pet_.step(now);
     }
 }
 
@@ -208,9 +233,10 @@ void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
     }
 
     // No PNG sprite sheet — fall back to the built-in procedural cat.
-    // 2.0x scale gives a ~32x32 visible neko in compositor units.
+    // 4.0x scale puts the cat at ~80×60 px so it's actually visible on a
+    // 1080p monitor without users having to lean in.
     draw_procedural_cat(cr, pet_.position.x, pet_.position.y,
-                        2.0,
+                        4.0,
                         pet_.fsm.state(), pet_.fsm.direction(),
                         pet_.fsm.frame());
     cairo_restore(cr);
@@ -220,7 +246,16 @@ void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
 std::string App::handle_request(const std::string& req) {
     using namespace std::chrono;
     if (req == "pet:toggle") { pet_visible_ = !pet_visible_; return pet_visible_ ? "visible" : "hidden"; }
-    if (req == "pet:quit")   { overlay_.quit(); return "quitting"; }
+    if (req == "pet:quit") {
+        // Wave goodbye before tearing the daemon down. notify-send is
+        // posix_spawn'd, so it survives our exit a few ms later.
+        const auto& persona = UserPersona::active();
+        notifier_.notify("hyprneko",
+            "Goodbye" + std::string(persona.honorific()) + "!",
+            "low");
+        overlay_.quit();
+        return "quitting";
+    }
     if (req == "pet:status") {
         auto& p = UserPersona::active();
         return std::string(p.greeting()) + " — pet="
