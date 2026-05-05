@@ -71,9 +71,9 @@ void draw_ears(cairo_t* cr) {
 }
 
 void draw_face(cairo_t* cr, PetState s) {
-    // Eyes — head is at +x, so eyes are on the +x side.
-    cairo_set_source_rgba(cr, 0.10, 0.10, 0.10, 1.0);
+    // Eyes: white sclera + dark pupil + small highlight.
     if (s == PetState::Sleep) {
+        cairo_set_source_rgba(cr, 0.10, 0.10, 0.10, 1.0);
         cairo_set_line_width(cr, 0.8);
         cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
         cairo_move_to(cr, 5.5, -2.5); cairo_line_to(cr, 7.5, -2.5);
@@ -81,9 +81,27 @@ void draw_face(cairo_t* cr, PetState s) {
         cairo_move_to(cr, 8.5, -2.5); cairo_line_to(cr, 10.5, -2.5);
         cairo_stroke(cr);
     } else {
-        const double r = (s == PetState::Wake) ? 1.4 : 1.0;
-        cairo_arc(cr, 6,  -2.5, r, 0, 2 * kPi); cairo_fill(cr);
-        cairo_arc(cr, 10, -2.5, r, 0, 2 * kPi); cairo_fill(cr);
+        const bool wide = (s == PetState::Wake);
+        const double sclera_r = wide ? 1.7 : 1.4;
+        const double pupil_r  = wide ? 0.8 : 0.7;
+        const struct { double x, y; } eyes[] = { {6, -2.5}, {10, -2.5} };
+        for (const auto& e : eyes) {
+            // Sclera
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 1.0);
+            cairo_arc(cr, e.x, e.y, sclera_r, 0, 2 * kPi);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgba(cr, 0.20, 0.20, 0.20, 0.9);
+            cairo_set_line_width(cr, 0.3);
+            cairo_stroke(cr);
+            // Pupil — slightly off-center toward the front (forward gaze).
+            cairo_set_source_rgba(cr, 0.05, 0.05, 0.10, 1.0);
+            cairo_arc(cr, e.x + 0.3, e.y, pupil_r, 0, 2 * kPi);
+            cairo_fill(cr);
+            // Tiny specular highlight.
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.95);
+            cairo_arc(cr, e.x + 0.55, e.y - 0.4, pupil_r * 0.35, 0, 2 * kPi);
+            cairo_fill(cr);
+        }
     }
 
     // Nose
@@ -134,24 +152,35 @@ void draw_tail(cairo_t* cr, int frame, PetState s) {
 
 void draw_legs(cairo_t* cr, PetState s, int frame) {
     cairo_set_source_rgba(cr, 0.96, 0.96, 0.96, 1.0);
-    cairo_set_line_width(cr, 2.4);
+    cairo_set_line_width(cr, 3.0);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 
+    // Anchor legs INSIDE the body so they look attached, not pinned. Body
+    // bottom is around y=10 so we start at y=7 (well inside) and finish at
+    // the ground. The thicker line (3.0) covers the join.
     if (s == PetState::Run) {
         const int phase = frame % 2;
         const double a = phase ?  2.0 : -2.0;
         const double b = phase ? -2.0 :  2.0;
-        // Front legs (+x side, leading)
-        cairo_move_to(cr, 6, 9); cairo_line_to(cr, 6 + a, 13.5); cairo_stroke(cr);
-        cairo_move_to(cr, 3, 9); cairo_line_to(cr, 3 + b, 13.5); cairo_stroke(cr);
-        // Back legs (-x side, trailing)
-        cairo_move_to(cr, -4, 9); cairo_line_to(cr, -4 + a, 13.5); cairo_stroke(cr);
-        cairo_move_to(cr, -7, 9); cairo_line_to(cr, -7 + b, 13.5); cairo_stroke(cr);
+        // Front legs
+        cairo_move_to(cr, 6, 7); cairo_line_to(cr, 6 + a, 13.5); cairo_stroke(cr);
+        cairo_move_to(cr, 3, 7); cairo_line_to(cr, 3 + b, 13.5); cairo_stroke(cr);
+        // Back legs
+        cairo_move_to(cr, -4, 7); cairo_line_to(cr, -4 + a, 13.5); cairo_stroke(cr);
+        cairo_move_to(cr, -7, 7); cairo_line_to(cr, -7 + b, 13.5); cairo_stroke(cr);
     } else {
-        cairo_move_to(cr, 6, 9);  cairo_line_to(cr, 6, 13.0);  cairo_stroke(cr);
-        cairo_move_to(cr, 3, 9);  cairo_line_to(cr, 3, 13.0);  cairo_stroke(cr);
-        cairo_move_to(cr, -4, 9); cairo_line_to(cr, -4, 13.0); cairo_stroke(cr);
-        cairo_move_to(cr, -7, 9); cairo_line_to(cr, -7, 13.0); cairo_stroke(cr);
+        cairo_move_to(cr,  6, 7); cairo_line_to(cr,  6, 13.0); cairo_stroke(cr);
+        cairo_move_to(cr,  3, 7); cairo_line_to(cr,  3, 13.0); cairo_stroke(cr);
+        cairo_move_to(cr, -4, 7); cairo_line_to(cr, -4, 13.0); cairo_stroke(cr);
+        cairo_move_to(cr, -7, 7); cairo_line_to(cr, -7, 13.0); cairo_stroke(cr);
+    }
+
+    // Tiny dark paws so the legs read as feet, not just sticks.
+    cairo_set_source_rgba(cr, 0.30, 0.30, 0.30, 0.85);
+    const double pawX[] = { 6, 3, -4, -7 };
+    for (double px : pawX) {
+        cairo_arc(cr, px, 13.5, 0.9, 0, 2 * kPi);
+        cairo_fill(cr);
     }
 }
 

@@ -19,6 +19,7 @@ struct CliResult {
     std::string request;
     std::string error;
     std::string config_path;
+    bool autostart_pomodoro = false;   // --pomodoro flag (only for RunDaemon)
 };
 
 CliResult parse_cli(int argc, char** argv);

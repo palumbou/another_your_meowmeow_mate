@@ -23,6 +23,7 @@ bool parse_bool(const std::string& v) {
 }
 
 CursorSource parse_cursor_source(const std::string& v) {
+    if (v == "auto")     return CursorSource::Auto;
     if (v == "hyprland") return CursorSource::Hyprland;
     if (v == "wlroots")  return CursorSource::Wlroots;
     if (v == "evdev")    return CursorSource::Evdev;

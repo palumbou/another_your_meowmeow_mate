@@ -6,7 +6,7 @@
 
 namespace aymm {
 
-enum class CursorSource { Hyprland, Wlroots, Evdev, Null };
+enum class CursorSource { Auto, Hyprland, Wlroots, Evdev, Null };
 enum class Behavior     { CursorChase, Idle };
 enum class OverlayLayer { Background, Bottom, Top, Overlay };
 
@@ -14,7 +14,7 @@ struct Config {
     std::string  animation_name             = "neko";
     std::string  sprite_dir;
     Behavior     behavior                   = Behavior::CursorChase;
-    CursorSource cursor_source              = CursorSource::Hyprland;
+    CursorSource cursor_source              = CursorSource::Auto;
     int          cursor_poll_hz             = 30;
     int          movement_speed             = 8;
     int          idle_distance              = 24;

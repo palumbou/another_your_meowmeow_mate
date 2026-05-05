@@ -47,8 +47,17 @@ int main(int argc, char** argv) {
 
     const auto path = cli.config_path.empty() ? Config::default_path()
                                                : std::filesystem::path(cli.config_path);
-    Config cfg = Config::load_or_default(path);
+    auto loaded = Config::load(path);
+    if (!loaded) {
+        std::cerr << "aymm: no config at " << path
+                  << " — using built-in defaults. Copy `examples/aymm.conf` from\n"
+                     "      the source / install tree to that path to customize.\n";
+    }
+    Config cfg = loaded.value_or(Config{});
 
-    App app(std::move(cfg));
+    AppOptions opts;
+    opts.autostart_pomodoro = cli.autostart_pomodoro;
+
+    App app(std::move(cfg), opts);
     return app.run();
 }

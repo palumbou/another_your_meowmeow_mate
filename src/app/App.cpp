@@ -8,36 +8,81 @@
 #include <cerrno>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <poll.h>
 #include <sys/timerfd.h>
+#include <thread>
 #include <unistd.h>
 
 namespace aymm {
 
 namespace {
 
-std::unique_ptr<CursorProvider> make_cursor_provider(CursorSource s) {
+bool hyprland_session_detected() {
+    const char* sig = std::getenv("HYPRLAND_INSTANCE_SIGNATURE");
+    return sig && *sig;
+}
+
+struct CursorPick {
+    std::unique_ptr<CursorProvider> provider;
+    EvdevCursorProvider*            evdev = nullptr;  // non-owning view if applicable
+};
+
+CursorPick make_cursor_provider(CursorSource s) {
+    auto try_hyprland = []() -> std::unique_ptr<CursorProvider> {
+        auto p = std::make_unique<HyprlandCursorProvider>();
+        if (p->ready()) return p;
+        return nullptr;
+    };
+    auto try_evdev = []() -> std::pair<std::unique_ptr<CursorProvider>, EvdevCursorProvider*> {
+        auto p = std::make_unique<EvdevCursorProvider>();
+        EvdevCursorProvider* raw = p.get();
+        if (p->ready()) return { std::move(p), raw };
+        return { nullptr, nullptr };
+    };
+
     switch (s) {
+        case CursorSource::Auto: {
+            if (hyprland_session_detected()) {
+                if (auto h = try_hyprland()) {
+                    std::cerr << "aymm: cursor provider = hyprland (auto-detected)\n";
+                    return { std::move(h), nullptr };
+                }
+                std::cerr << "aymm: HYPRLAND_INSTANCE_SIGNATURE set but socket not "
+                             "reachable; trying evdev fallback.\n";
+            } else {
+                std::cerr << "aymm: not on Hyprland; trying evdev cursor provider "
+                             "(works on KDE/sway/etc, requires the `input` group).\n";
+            }
+            auto [ev, raw] = try_evdev();
+            if (ev) return { std::move(ev), raw };
+            std::cerr << "aymm: no cursor provider available; pet will sit still.\n";
+            return { std::make_unique<NullCursorProvider>(), nullptr };
+        }
         case CursorSource::Hyprland: {
-            auto p = std::make_unique<HyprlandCursorProvider>();
-            if (p->ready()) return p;
+            if (auto h = try_hyprland()) return { std::move(h), nullptr };
             std::cerr << "aymm: Hyprland cursor socket not detected; "
-                         "falling back to null provider.\n";
-            return std::make_unique<NullCursorProvider>();
+                         "pass cursor_source=auto or cursor_source=evdev.\n";
+            return { std::make_unique<NullCursorProvider>(), nullptr };
+        }
+        case CursorSource::Evdev: {
+            auto [ev, raw] = try_evdev();
+            if (ev) return { std::move(ev), raw };
+            return { std::make_unique<NullCursorProvider>(), nullptr };
         }
         case CursorSource::Wlroots:
-        case CursorSource::Evdev:
         case CursorSource::Null:
         default:
-            return std::make_unique<NullCursorProvider>();
+            return { std::make_unique<NullCursorProvider>(), nullptr };
     }
 }
 
 } // namespace
 
-App::App(Config cfg)
+App::App(Config cfg, AppOptions opts)
   : cfg_(std::move(cfg)),
+    opts_(opts),
     pomodoro_(PomodoroConfig{
         cfg_.pomodoro_study_minutes,
         cfg_.pomodoro_break_minutes,
@@ -45,10 +90,13 @@ App::App(Config cfg)
         cfg_.pomodoro_sessions_before_long_break,
         cfg_.pomodoro_auto_start,
         cfg_.pomodoro_show_notifications}),
-    pomodoro_behavior_(pet_, pomodoro_, cfg_.movement_speed, cfg_.idle_distance),
-    cursor_(make_cursor_provider(cfg_.cursor_source)),
-    chase_(std::make_unique<CursorChaseBehavior>(pet_, *cursor_))
+    pomodoro_behavior_(pet_, pomodoro_, cfg_.movement_speed, cfg_.idle_distance)
 {
+    auto pick = make_cursor_provider(cfg_.cursor_source);
+    cursor_ = std::move(pick.provider);
+    evdev_  = pick.evdev;
+    chase_  = std::make_unique<CursorChaseBehavior>(pet_, *cursor_);
+
     pet_.speed         = cfg_.movement_speed;
     pet_.idle_distance = cfg_.idle_distance;
 
@@ -59,23 +107,32 @@ App::App(Config cfg)
             animations_ = std::make_unique<AnimationResolver>(*sheet_);
         } else {
             std::cerr << "aymm: sprite sheet load failed: " << err
-                      << "  (drawing placeholder).\n";
+                      << "  (drawing the procedural cat instead).\n";
         }
     }
 
     notifier_.set_enabled(cfg_.pomodoro_show_notifications);
 
-    if (cfg_.enable_pomodoro && cfg_.pomodoro_auto_start) pomodoro_.start();
+    // Pomodoro auto-start: either the config flag is on, or --pomodoro
+    // was passed on the command line.
+    if (opts_.autostart_pomodoro || (cfg_.enable_pomodoro && cfg_.pomodoro_auto_start)) {
+        pomodoro_.start();
+    }
     last_pomodoro_phase_ = pomodoro_.phase();
 
-    // Greet on startup. notify-send is fire-and-forget; if it isn't on PATH
-    // the Notifier silently disables itself with a one-time stderr line.
+    // Greet on startup. Both notify-send (system tray) and the on-screen
+    // speech bubble (the cat tells you hello). Works for every persona —
+    // the persona just decides whether ", Queen" is appended.
     {
         const auto& persona = UserPersona::active();
-        notifier_.notify("aymm",
-            std::string(persona.greeting()) + "!",
-            "low");
+        const std::string greet = std::string(persona.greeting()) + "!";
+        notifier_.notify("aymm", greet, "low");
+        say(greet);
     }
+}
+
+void App::say(std::string_view text, std::chrono::milliseconds duration) {
+    bubble_.say(text, duration);
 }
 
 int App::run() {
@@ -85,10 +142,20 @@ int App::run() {
         return 1;
     }
 
-    // Center pet on the primary output (compositor-global coords).
+    const Rect bounds  = overlay_.compositor_bounds();
     const Rect primary = overlay_.primary_output_rect();
+
     pet_.position.x = primary.x + primary.w / 2.0;
     pet_.position.y = primary.y + primary.h / 2.0;
+
+    // Hand the evdev provider its clamping rectangle and a sensible initial
+    // cursor position. Hyprland provider doesn't need this (it reports
+    // absolute compositor coordinates).
+    if (evdev_) {
+        evdev_->set_bounds(bounds.x, bounds.y, bounds.w, bounds.h);
+        evdev_->set_position(static_cast<int>(pet_.position.x),
+                             static_cast<int>(pet_.position.y));
+    }
 
     overlay_.set_draw([this](cairo_t* cr, int w, int h, int ox, int oy){
         draw(cr, w, h, ox, oy);
@@ -147,12 +214,15 @@ void App::on_tick() {
         on_pomodoro_phase_changed(last_pomodoro_phase_, pomodoro_.phase());
         last_pomodoro_phase_ = pomodoro_.phase();
     }
-    if (cfg_.enable_pomodoro) pomodoro_behavior_.apply();
+    pomodoro_behavior_.apply();
 
-    // Pomodoro gate: during focus the cat sleeps in its basket; during break
-    // (and when the timer is off) it follows the cursor as configured.
+    // Pomodoro gate: any time a Pomodoro session is running, the cat behavior
+    // is dictated by the phase. The config-level `enable_pomodoro` flag only
+    // affects whether the timer auto-starts; it does NOT gate the behavior
+    // — otherwise `aymm pomodoro start` from the CLI would be a no-op
+    // visually, which is the bug Ugo reported.
     bool should_chase = (cfg_.behavior == Behavior::CursorChase);
-    if (cfg_.enable_pomodoro && pomodoro_.phase() != PomodoroPhase::Stopped) {
+    if (pomodoro_.phase() != PomodoroPhase::Stopped) {
         const auto active = (pomodoro_.phase() == PomodoroPhase::Paused)
                           ? pomodoro_.paused_phase() : pomodoro_.phase();
         if (active == PomodoroPhase::Focus) {
@@ -172,29 +242,41 @@ void App::on_tick() {
 }
 
 void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
-    if (!cfg_.pomodoro_show_notifications) return;
     const auto& persona = UserPersona::active();
     const std::string honor { persona.honorific() };
+
+    auto announce = [&](std::string_view title, std::string_view body,
+                        std::string_view bubble, std::string_view urgency) {
+        if (cfg_.pomodoro_show_notifications) {
+            notifier_.notify(title, body, urgency);
+        }
+        say(bubble);
+    };
+
     switch (to) {
         case PomodoroPhase::Focus:
             if (from == PomodoroPhase::Stopped) {
-                notifier_.notify("aymm",
-                    std::string("Focus session started") + honor + ".",
+                announce("aymm",
+                    "Focus session started" + honor + ".",
+                    "Focus time" + honor + " 🐾",
                     "low");
             } else {
-                notifier_.notify("aymm",
-                    std::string("Back to focus") + honor + ". You've got this.",
+                announce("aymm",
+                    "Back to focus" + honor + ". You've got this.",
+                    "Back to focus" + honor + " 🐾",
                     "low");
             }
             break;
         case PomodoroPhase::Break:
-            notifier_.notify("aymm",
-                std::string("Your break awaits") + honor + ".",
+            announce("aymm",
+                "Your break awaits" + honor + ".",
+                "Break time" + honor + "!",
                 "normal");
             break;
         case PomodoroPhase::LongBreak:
-            notifier_.notify("aymm",
-                std::string("Long break time") + honor + " — go stretch.",
+            announce("aymm",
+                "Long break time" + honor + " — go stretch.",
+                "Long break" + honor + " — stretch!",
                 "normal");
             break;
         default: break;
@@ -203,9 +285,6 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
 
 void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
     if (!pet_visible_) return;
-    // Translate the surface's coordinate system so we can draw in
-    // compositor-global coordinates. Each per-output surface clips to its
-    // own bounds, so a pet on monitor 2 simply doesn't render on monitor 1.
     cairo_save(cr);
     cairo_translate(cr, -origin_x, -origin_y);
 
@@ -227,38 +306,47 @@ void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
             cairo_rectangle(cr, 0, 0, sheet_->frame_w(), sheet_->frame_h());
             cairo_fill(cr);
             cairo_restore(cr);
-            cairo_restore(cr);
-            return;
         }
+    } else {
+        // No PNG sprite sheet — fall back to the built-in procedural cat at
+        // 4.0× scale (cat is ~80×60 px on a 1080p monitor).
+        draw_procedural_cat(cr, pet_.position.x, pet_.position.y,
+                            4.0,
+                            pet_.fsm.state(), pet_.fsm.direction(),
+                            pet_.fsm.frame());
     }
 
-    // No PNG sprite sheet — fall back to the built-in procedural cat.
-    // 4.0x scale puts the cat at ~80×60 px so it's actually visible on a
-    // 1080p monitor without users having to lean in.
-    draw_procedural_cat(cr, pet_.position.x, pet_.position.y,
-                        4.0,
-                        pet_.fsm.state(), pet_.fsm.direction(),
-                        pet_.fsm.frame());
+    // Speech bubble on top of everything else.
+    if (bubble_.active()) {
+        bubble_.draw(cr, pet_.position.x, pet_.position.y);
+    }
+
     cairo_restore(cr);
     (void)w; (void)h;
 }
 
 std::string App::handle_request(const std::string& req) {
     using namespace std::chrono;
-    if (req == "pet:toggle") { pet_visible_ = !pet_visible_; return pet_visible_ ? "visible" : "hidden"; }
+    const auto& persona = UserPersona::active();
+
+    if (req == "pet:toggle") {
+        pet_visible_ = !pet_visible_;
+        return pet_visible_ ? "visible" : "hidden";
+    }
     if (req == "pet:quit") {
-        // Wave goodbye before tearing the daemon down. notify-send is
-        // posix_spawn'd, so it survives our exit a few ms later.
-        const auto& persona = UserPersona::active();
-        notifier_.notify("aymm",
-            "Goodbye" + std::string(persona.honorific()) + "!",
-            "low");
-        overlay_.quit();
+        const std::string bye = "Goodbye" + std::string(persona.honorific()) + "!";
+        notifier_.notify("aymm", bye, "low");
+        say(bye, std::chrono::milliseconds(2500));
+        // Defer the actual quit so the bubble has a chance to render.
+        // Two redraws at 30 Hz is ~67 ms; we give 2 s to be safe.
+        std::thread([this](){
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            overlay_.quit();
+        }).detach();
         return "quitting";
     }
     if (req == "pet:status") {
-        auto& p = UserPersona::active();
-        return std::string(p.greeting()) + " — pet="
+        return std::string(persona.greeting()) + " — pet="
              + (pet_visible_ ? "visible" : "hidden")
              + " state=" + std::string(PetStateMachine::state_name(pet_.fsm.state()));
     }
