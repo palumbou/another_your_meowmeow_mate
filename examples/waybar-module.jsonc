@@ -1,22 +1,22 @@
 // Drop this into ~/.config/waybar/config (under "modules-right" or wherever
 // you want the module to appear) and merge with your existing config.
 //
-//     "modules-right": ["custom/hyprneko", "clock"],
+//     "modules-right": ["custom/aymm", "clock"],
 //
-// The module reads JSON from `hyprneko waybar-status` once a second. If no
-// daemon is running, hyprneko emits a "stopped" placeholder so the module
+// The module reads JSON from `aymm waybar-status` once a second. If no
+// daemon is running, aymm emits a "stopped" placeholder so the module
 // stays valid.
 
 {
-  "custom/hyprneko": {
+  "custom/aymm": {
     "format": "{}",
     "return-type": "json",
     "interval": 1,
-    "exec": "hyprneko waybar-status",
+    "exec": "aymm waybar-status",
 
-    "on-click":        "hyprneko pomodoro toggle",
-    "on-click-right":  "hyprneko toggle",
-    "on-click-middle": "hyprneko quit",
+    "on-click":        "aymm pomodoro toggle",
+    "on-click-right":  "aymm toggle",
+    "on-click-middle": "aymm quit",
 
     "tooltip": true
   }

@@ -10,7 +10,7 @@
 }:
 
 stdenv.mkDerivation (finalAttrs: {
-  pname = "hyprneko";
+  pname = "aymm";
   version = "0.1.0";
 
   src = lib.cleanSource ../.;
@@ -18,12 +18,12 @@ stdenv.mkDerivation (finalAttrs: {
   nativeBuildInputs = [ cmake pkg-config wayland-scanner ];
   buildInputs = [ wayland wayland-protocols cairo ];
 
-  cmakeFlags = lib.optional queenMode "-DHYPRNEKO_QUEEN_MODE=ON";
+  cmakeFlags = lib.optional queenMode "-DAYMM_QUEEN_MODE=ON";
 
   meta = with lib; {
     description = "Wayland-native desktop pet that chases your cursor under Hyprland";
     license = licenses.mit;
     platforms = platforms.linux;
-    mainProgram = "hyprneko";
+    mainProgram = "aymm";
   };
 })

@@ -1,4 +1,4 @@
-# How to test hyprneko
+# How to test aymm
 
 This page covers three things:
 
@@ -12,14 +12,14 @@ This page covers three things:
 These work in a plain shell on any Linux:
 
 ```sh
-./bin/hyprneko --version
-./bin/hyprneko --help
-./bin/hyprneko waybar-status        # JSON, even with no daemon
-USER=bianca ./bin/hyprneko waybar-status   # only meaningful on the queen branch
+./bin/aymm --version
+./bin/aymm --help
+./bin/aymm waybar-status        # JSON, even with no daemon
+USER=bianca ./bin/aymm waybar-status   # only meaningful on the queen branch
 ```
 
 Expected:
-- `--version` prints `hyprneko 0.1.0`
+- `--version` prints `aymm 0.1.0`
 - `waybar-status` prints valid JSON ending in `"percentage":0`
 - On the queen branch: `USER=bianca` or `USER=White` → tooltip says
   `Queen's Pomodoro: stopped`. Any other username → `Pomodoro: stopped`.
@@ -28,7 +28,7 @@ If you only see this much, the code paths that don't touch Wayland are fine.
 
 ## 2. Full test under Hyprland
 
-You need a running Hyprland session. Hyprneko expects:
+You need a running Hyprland session. Another Your MeowMeow Mate expects:
 
 - `$HYPRLAND_INSTANCE_SIGNATURE` set in the environment (Hyprland sets it
   automatically inside its session).
@@ -40,7 +40,7 @@ You need a running Hyprland session. Hyprneko expects:
 From a terminal *inside* the Hyprland session:
 
 ```sh
-./bin/hyprneko          # foreground; Ctrl+C to stop
+./bin/aymm          # foreground; Ctrl+C to stop
 ```
 
 You should immediately see a small **orange circle** appear roughly at
@@ -69,18 +69,18 @@ If you see nothing:
 Open a second terminal and:
 
 ```sh
-./bin/hyprneko status              # human-readable
-./bin/hyprneko toggle              # show/hide pet
-./bin/hyprneko pomodoro start      # focus session
-./bin/hyprneko pomodoro status     # 'focus 24:59' or similar
-./bin/hyprneko pomodoro skip       # jump to break — should fire a notification
-./bin/hyprneko pomodoro stop
-./bin/hyprneko quit                # daemon exits
+./bin/aymm status              # human-readable
+./bin/aymm toggle              # show/hide pet
+./bin/aymm pomodoro start      # focus session
+./bin/aymm pomodoro status     # 'focus 24:59' or similar
+./bin/aymm pomodoro skip       # jump to break — should fire a notification
+./bin/aymm pomodoro stop
+./bin/aymm quit                # daemon exits
 ```
 
 `pomodoro skip` is the fastest way to verify the **notification path**:
 it triggers an immediate phase transition, which fires
-`notify-send -u normal -a hyprneko ...`. Make sure you have a
+`notify-send -u normal -a aymm ...`. Make sure you have a
 notification daemon running (`mako`, `swaync`, `dunst`, …) and that
 `notify-send` is on `$PATH`.
 
@@ -89,8 +89,8 @@ notification daemon running (`mako`, `swaync`, `dunst`, …) and that
 While the daemon is running:
 
 ```sh
-./bin/hyprneko pomodoro start
-./bin/hyprneko waybar-status        # talks to the daemon now
+./bin/aymm pomodoro start
+./bin/aymm waybar-status        # talks to the daemon now
 # {"text":"🐈 24:58","tooltip":"Pomodoro: focus session — 24:58 remaining","class":"focus","percentage":0}
 ```
 
@@ -104,9 +104,9 @@ middle-click quits the daemon.
 Add to `~/.config/hypr/hyprland.conf`:
 
 ```
-exec-once = /path/to/hyprneko
-layerrule = blur, hyprneko
-layerrule = ignorezero, hyprneko
+exec-once = /path/to/aymm
+layerrule = blur, aymm
+layerrule = ignorezero, aymm
 ```
 
 Restart Hyprland (`hyprctl dispatch exit` and re-login, or `hyprctl
@@ -118,10 +118,10 @@ reload` after the change).
 
 | File                                                    | Use this when…                          |
 |---------------------------------------------------------|-----------------------------------------|
-| `hyprneko-0.1.0-master-source.tar.gz`                   | Building from source (any distro)       |
-| `hyprneko-0.1.0-queen-bianca-source.tar.gz`             | Same, queen branch                      |
-| `hyprneko-0.1.0-master-nixos-x86_64.tar.gz`             | Running on **NixOS**, master persona    |
-| `hyprneko-0.1.0-feature-queen-bianca-mode-nixos-x86_64.tar.gz` | Running on **NixOS**, queen persona |
+| `aymm-0.1.0-master-source.tar.gz`                   | Building from source (any distro)       |
+| `aymm-0.1.0-queen-bianca-source.tar.gz`             | Same, queen branch                      |
+| `aymm-0.1.0-master-nixos-x86_64.tar.gz`             | Running on **NixOS**, master persona    |
+| `aymm-0.1.0-feature-queen-bianca-mode-nixos-x86_64.tar.gz` | Running on **NixOS**, queen persona |
 
 **Important caveat about the prebuilt binaries**: they were compiled
 inside a `nix-shell` and are dynamically linked against `wayland-client`
@@ -133,8 +133,8 @@ with `nix` installed and the required closures fetched, but they will
 For Fedora / Ubuntu, build from the source tarball:
 
 ```sh
-tar xzf hyprneko-0.1.0-master-source.tar.gz
-cd hyprneko-0.1.0-master
+tar xzf aymm-0.1.0-master-source.tar.gz
+cd aymm-0.1.0-master
 # Fedora
 sudo dnf install cmake gcc-c++ pkgconf-pkg-config wayland-devel \
                   wayland-protocols-devel cairo-devel
@@ -144,7 +144,7 @@ sudo apt install build-essential cmake pkg-config libwayland-dev \
 
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-./build/hyprneko --version
+./build/aymm --version
 ```
 
 The build system has been tested only on NixOS; the Fedora/Ubuntu
@@ -155,9 +155,9 @@ end-to-end pipeline on those distros has not been verified by me.
 
 - Sprite rendering on a real screen — the placeholder circle is what
   proves the chase loop. To validate sprite rendering, drop a `neko.png`
-  into `share/hyprneko/sprites/neko/` and adjust `frame_w`/`frame_h` in
+  into `share/aymm/sprites/neko/` and adjust `frame_w`/`frame_h` in
   `sheet.conf` if needed; then set `sprite_dir=...` in your config.
 - The `wlroots` and `evdev` cursor providers — both are documented stubs
   in [docs/cursor-providers.md](cursor-providers.md).
 - KDE/GNOME — those compositors don't expose `wlr-layer-shell`, so
-  hyprneko cannot create its overlay there.
+  aymm cannot create its overlay there.

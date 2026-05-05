@@ -1,4 +1,4 @@
-Source: hyprneko
+Source: aymm
 Section: x11
 Priority: optional
 Maintainer: Ugo Palumbo <ugo.palumbo@example>
@@ -12,11 +12,11 @@ Build-Depends:
  libcairo2-dev
 Standards-Version: 4.6.2
 
-Package: hyprneko
+Package: aymm
 Architecture: linux-any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Wayland-native desktop pet (Hyprland-first)
- Hyprneko is a Wayland-native desktop pet inspired by oneko. It runs as a
+ Another Your MeowMeow Mate is a Wayland-native desktop pet inspired by oneko. It runs as a
  wlr-layer-shell overlay and chases the global cursor by polling Hyprland's
  IPC socket — no X11/XWayland involved. Includes an optional Pomodoro mode
  and a Waybar custom-module integration.

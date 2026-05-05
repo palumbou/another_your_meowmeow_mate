@@ -22,7 +22,7 @@
                                                             |
                                               +--------------------------+
                                               |  Control socket (UNIX)   |
-                                              |  hyprneko CLI <-> daemon |
+                                              |  aymm CLI <-> daemon |
                                               +--------------------------+
 ```
 

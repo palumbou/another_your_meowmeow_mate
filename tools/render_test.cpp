@@ -6,12 +6,12 @@
 //        src/pet/PetStateMachine.cpp \
 //        \$(pkg-config --cflags --libs cairo)"
 //   ./build/render_test cat.png
-#include "hyprneko/ProceduralCat.hpp"
+#include "aymm/ProceduralCat.hpp"
 #include <cairo/cairo.h>
 #include <cstdio>
 
 int main(int argc, char** argv) {
-    using namespace hyprneko;
+    using namespace aymm;
     const int W = 320, H = 80;
     cairo_surface_t* surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, W, H);
     cairo_t* cr = cairo_create(surf);

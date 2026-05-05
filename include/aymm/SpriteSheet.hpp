@@ -9,7 +9,7 @@
 // Forward declare Cairo to avoid leaking the header through public includes.
 typedef struct _cairo_surface cairo_surface_t;
 
-namespace hyprneko {
+namespace aymm {
 
 // One animation = ordered list of (col, row) frames pulled from the sheet.
 struct AnimationFrames {
@@ -42,4 +42,4 @@ private:
     std::unordered_map<std::string, AnimationFrames> animations_;
 };
 
-} // namespace hyprneko
+} // namespace aymm

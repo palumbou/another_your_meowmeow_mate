@@ -1,12 +1,12 @@
 #pragma once
 
-#include "hyprneko/PetStateMachine.hpp"
-#include "hyprneko/SpriteSheet.hpp"
+#include "aymm/PetStateMachine.hpp"
+#include "aymm/SpriteSheet.hpp"
 
 #include <string>
 #include <string_view>
 
-namespace hyprneko {
+namespace aymm {
 
 // Resolves a (state, direction) pair to an animation name in the sprite
 // sheet. The naming convention is:
@@ -23,4 +23,4 @@ private:
     const SpriteSheet& sheet_;
 };
 
-} // namespace hyprneko
+} // namespace aymm

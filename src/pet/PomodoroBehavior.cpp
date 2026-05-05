@@ -1,8 +1,8 @@
-#include "hyprneko/PomodoroBehavior.hpp"
+#include "aymm/PomodoroBehavior.hpp"
 
 #include <algorithm>
 
-namespace hyprneko {
+namespace aymm {
 
 void PomodoroBehavior::apply() {
     const auto active = (timer_.phase() == PomodoroPhase::Paused)
@@ -24,4 +24,4 @@ void PomodoroBehavior::apply() {
     }
 }
 
-} // namespace hyprneko
+} // namespace aymm

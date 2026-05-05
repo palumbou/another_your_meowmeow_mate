@@ -1,10 +1,10 @@
 #pragma once
 
-#include "hyprneko/PetStateMachine.hpp"
+#include "aymm/PetStateMachine.hpp"
 
 #include <chrono>
 
-namespace hyprneko {
+namespace aymm {
 
 struct Vec2 {
     double x = 0;
@@ -32,4 +32,4 @@ public:
     Direction direction_to_target() const;
 };
 
-} // namespace hyprneko
+} // namespace aymm

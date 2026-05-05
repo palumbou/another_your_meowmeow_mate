@@ -1,6 +1,6 @@
 #pragma once
 
-#include "hyprneko/Config.hpp"
+#include "aymm/Config.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -9,7 +9,7 @@
 
 typedef struct _cairo cairo_t;
 
-namespace hyprneko {
+namespace aymm {
 
 struct Rect { int x = 0, y = 0, w = 0, h = 0; };
 
@@ -65,4 +65,4 @@ private:
     bool should_quit_ = false;
 };
 
-} // namespace hyprneko
+} // namespace aymm

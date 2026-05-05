@@ -1,9 +1,9 @@
 #pragma once
 
-#include "hyprneko/CursorProvider.hpp"
-#include "hyprneko/Pet.hpp"
+#include "aymm/CursorProvider.hpp"
+#include "aymm/Pet.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 class CursorChaseBehavior {
 public:
@@ -17,4 +17,4 @@ private:
     CursorProvider& provider_;
 };
 
-} // namespace hyprneko
+} // namespace aymm

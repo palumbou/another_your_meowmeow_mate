@@ -1,8 +1,8 @@
 #pragma once
 
-#include "hyprneko/CursorProvider.hpp"
+#include "aymm/CursorProvider.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 // Stub. A real implementation would open /dev/input/event* devices (requires
 // the user to be in the `input` group, or a udev rule) and accumulate
@@ -17,4 +17,4 @@ public:
     const char* name() const override { return "evdev (stub)"; }
 };
 
-} // namespace hyprneko
+} // namespace aymm

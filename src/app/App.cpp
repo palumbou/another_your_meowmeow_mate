@@ -1,7 +1,7 @@
-#include "hyprneko/App.hpp"
-#include "hyprneko/ProceduralCat.hpp"
-#include "hyprneko/UserPersona.hpp"
-#include "hyprneko/WaybarStatus.hpp"
+#include "aymm/App.hpp"
+#include "aymm/ProceduralCat.hpp"
+#include "aymm/UserPersona.hpp"
+#include "aymm/WaybarStatus.hpp"
 
 #include <cairo/cairo.h>
 #include <algorithm>
@@ -13,7 +13,7 @@
 #include <sys/timerfd.h>
 #include <unistd.h>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -22,7 +22,7 @@ std::unique_ptr<CursorProvider> make_cursor_provider(CursorSource s) {
         case CursorSource::Hyprland: {
             auto p = std::make_unique<HyprlandCursorProvider>();
             if (p->ready()) return p;
-            std::cerr << "hyprneko: Hyprland cursor socket not detected; "
+            std::cerr << "aymm: Hyprland cursor socket not detected; "
                          "falling back to null provider.\n";
             return std::make_unique<NullCursorProvider>();
         }
@@ -58,7 +58,7 @@ App::App(Config cfg)
         if (sheet_) {
             animations_ = std::make_unique<AnimationResolver>(*sheet_);
         } else {
-            std::cerr << "hyprneko: sprite sheet load failed: " << err
+            std::cerr << "aymm: sprite sheet load failed: " << err
                       << "  (drawing placeholder).\n";
         }
     }
@@ -72,7 +72,7 @@ App::App(Config cfg)
     // the Notifier silently disables itself with a one-time stderr line.
     {
         const auto& persona = UserPersona::active();
-        notifier_.notify("hyprneko",
+        notifier_.notify("aymm",
             std::string(persona.greeting()) + "!",
             "low");
     }
@@ -81,7 +81,7 @@ App::App(Config cfg)
 int App::run() {
     std::string err;
     if (!overlay_.connect(cfg_, err)) {
-        std::cerr << "hyprneko: " << err << "\n";
+        std::cerr << "aymm: " << err << "\n";
         return 1;
     }
 
@@ -95,7 +95,7 @@ int App::run() {
     });
 
     if (control_.bind_listen() < 0) {
-        std::cerr << "hyprneko: control socket bind failed (errno="
+        std::cerr << "aymm: control socket bind failed (errno="
                   << errno << "); CLI commands will not reach this daemon.\n";
     }
 
@@ -178,22 +178,22 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
     switch (to) {
         case PomodoroPhase::Focus:
             if (from == PomodoroPhase::Stopped) {
-                notifier_.notify("hyprneko",
+                notifier_.notify("aymm",
                     std::string("Focus session started") + honor + ".",
                     "low");
             } else {
-                notifier_.notify("hyprneko",
+                notifier_.notify("aymm",
                     std::string("Back to focus") + honor + ". You've got this.",
                     "low");
             }
             break;
         case PomodoroPhase::Break:
-            notifier_.notify("hyprneko",
+            notifier_.notify("aymm",
                 std::string("Your break awaits") + honor + ".",
                 "normal");
             break;
         case PomodoroPhase::LongBreak:
-            notifier_.notify("hyprneko",
+            notifier_.notify("aymm",
                 std::string("Long break time") + honor + " — go stretch.",
                 "normal");
             break;
@@ -250,7 +250,7 @@ std::string App::handle_request(const std::string& req) {
         // Wave goodbye before tearing the daemon down. notify-send is
         // posix_spawn'd, so it survives our exit a few ms later.
         const auto& persona = UserPersona::active();
-        notifier_.notify("hyprneko",
+        notifier_.notify("aymm",
             "Goodbye" + std::string(persona.honorific()) + "!",
             "low");
         overlay_.quit();
@@ -280,4 +280,4 @@ std::string App::handle_request(const std::string& req) {
     return "error: unknown request";
 }
 
-} // namespace hyprneko
+} // namespace aymm

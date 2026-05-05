@@ -1,11 +1,11 @@
-#include "hyprneko/WaybarStatus.hpp"
-#include "hyprneko/UserPersona.hpp"
+#include "aymm/WaybarStatus.hpp"
+#include "aymm/UserPersona.hpp"
 
 #include <cstdio>
 #include <sstream>
 #include <string>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -92,4 +92,4 @@ std::string waybar_json(const PomodoroTimer& timer, bool pet_running) {
     return o.str();
 }
 
-} // namespace hyprneko
+} // namespace aymm

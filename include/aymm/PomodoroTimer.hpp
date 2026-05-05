@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
-namespace hyprneko {
+namespace aymm {
 
 enum class PomodoroPhase {
     Stopped,   // not running
@@ -60,4 +60,4 @@ private:
     int            completed_focus_ = 0;
 };
 
-} // namespace hyprneko
+} // namespace aymm

@@ -1,2 +1,2 @@
-#include "hyprneko/EvdevCursorProvider.hpp"
-namespace hyprneko {} // namespace hyprneko
+#include "aymm/EvdevCursorProvider.hpp"
+namespace aymm {} // namespace aymm

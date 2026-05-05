@@ -19,7 +19,7 @@ Questa directory è un **template**. Non contiene `neko.png` perché:
    Nome di default: `neko.png`.
 2. Modifica `sheet.conf` mappando i nomi delle animazioni alle coordinate
    della griglia (vedi commenti nel file).
-3. Imposta `sprite_dir` nel tuo `hyprneko.conf` puntando a questa directory.
+3. Imposta `sprite_dir` nel tuo `aymm.conf` puntando a questa directory.
 
 ## Sorgenti consigliate
 

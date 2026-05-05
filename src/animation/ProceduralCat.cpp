@@ -1,9 +1,9 @@
-#include "hyprneko/ProceduralCat.hpp"
+#include "aymm/ProceduralCat.hpp"
 
 #include <cairo/cairo.h>
 #include <cmath>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -301,4 +301,4 @@ void draw_procedural_cat(cairo_t* cr,
     cairo_restore(cr);
 }
 
-} // namespace hyprneko
+} // namespace aymm

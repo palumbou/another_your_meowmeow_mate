@@ -1,9 +1,9 @@
 #pragma once
 
-#include "hyprneko/Pet.hpp"
-#include "hyprneko/PomodoroTimer.hpp"
+#include "aymm/Pet.hpp"
+#include "aymm/PomodoroTimer.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 // Modulates the pet's behavior based on the current Pomodoro phase:
 // - during Focus: pet stays calm (slower speed, longer idle distance)
@@ -24,4 +24,4 @@ private:
     int base_idle_distance_;
 };
 
-} // namespace hyprneko
+} // namespace aymm

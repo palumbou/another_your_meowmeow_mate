@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 
-namespace hyprneko {
+namespace aymm {
 
 enum class CursorSource { Hyprland, Wlroots, Evdev, Null };
 enum class Behavior     { CursorChase, Idle };
@@ -38,4 +38,4 @@ struct Config {
     static std::filesystem::path default_path();
 };
 
-} // namespace hyprneko
+} // namespace aymm

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "hyprneko/CursorProvider.hpp"
+#include "aymm/CursorProvider.hpp"
 
 #include <optional>
 #include <string>
 
-namespace hyprneko {
+namespace aymm {
 
 // Polls Hyprland's IPC socket1 for cursor position.
 //
@@ -32,4 +32,4 @@ private:
     std::string socket_path_;
 };
 
-} // namespace hyprneko
+} // namespace aymm

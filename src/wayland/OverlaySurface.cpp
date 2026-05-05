@@ -1,4 +1,4 @@
-#include "hyprneko/OverlaySurface.hpp"
+#include "aymm/OverlaySurface.hpp"
 
 #include <algorithm>
 #include <cairo/cairo.h>
@@ -17,7 +17,7 @@
 #include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -26,7 +26,7 @@ int memfd_create_compat(const char* name, unsigned flags) {
     return static_cast<int>(::syscall(__NR_memfd_create, name, flags));
 #else
     (void)flags;
-    char tmpl[] = "/tmp/hyprneko-XXXXXX";
+    char tmpl[] = "/tmp/aymm-XXXXXX";
     int fd = ::mkstemp(tmpl);
     if (fd >= 0) ::unlink(tmpl);
     return fd;
@@ -146,7 +146,7 @@ bool ensure_buffer(OverlaySurface::OutputSurface* o, OverlaySurface::Impl* impl)
     if (o->mapped) { ::munmap(o->mapped, o->mapped_size); o->mapped = nullptr; o->mapped_size = 0; }
     if (o->shm_fd >= 0) { ::close(o->shm_fd); o->shm_fd = -1; }
 
-    o->shm_fd = memfd_create_compat("hyprneko-buf", MFD_CLOEXEC);
+    o->shm_fd = memfd_create_compat("aymm-buf", MFD_CLOEXEC);
     if (o->shm_fd < 0) return false;
     if (::ftruncate(o->shm_fd, static_cast<off_t>(size)) < 0) return false;
     o->mapped = static_cast<uint8_t*>(
@@ -243,7 +243,7 @@ void build_surface_for(OverlaySurface::OutputSurface* o, OverlaySurface::Impl* i
 
     o->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
         impl->layer_shell, o->surface, o->output,
-        layer_to_proto(impl->layer), "hyprneko");
+        layer_to_proto(impl->layer), "aymm");
 
     zwlr_layer_surface_v1_set_anchor(o->layer_surface,
         ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP    | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM
@@ -410,4 +410,4 @@ OverlaySurface::Impl* OverlaySurface::__impl_for_callbacks() {
     return impl_.get();
 }
 
-} // namespace hyprneko
+} // namespace aymm

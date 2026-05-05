@@ -3,7 +3,7 @@
 Wayland deliberately does not expose the global cursor position to arbitrary
 clients: every wl_pointer event is scoped to a surface that has the focus.
 A "cursor chase" desktop pet therefore needs an out-of-band source for cursor
-coordinates. Hyprneko abstracts that source behind `CursorProvider`.
+coordinates. Another Your MeowMeow Mate abstracts that source behind `CursorProvider`.
 
 ## hyprland (default)
 

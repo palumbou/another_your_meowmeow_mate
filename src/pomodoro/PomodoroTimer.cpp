@@ -1,6 +1,6 @@
-#include "hyprneko/PomodoroTimer.hpp"
+#include "aymm/PomodoroTimer.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 PomodoroTimer::PomodoroTimer(PomodoroConfig cfg) : cfg_(cfg) {}
 
@@ -114,4 +114,4 @@ int PomodoroTimer::progress_percent(TimePoint now) const {
     return static_cast<int>(100.0 * done.count() / dur.count());
 }
 
-} // namespace hyprneko
+} // namespace aymm

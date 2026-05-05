@@ -1,6 +1,6 @@
-#include "hyprneko/CursorChaseBehavior.hpp"
+#include "aymm/CursorChaseBehavior.hpp"
 
-namespace hyprneko {
+namespace aymm {
 
 void CursorChaseBehavior::update(Pet::Clock::time_point now) {
     if (auto pos = provider_.poll()) {
@@ -11,4 +11,4 @@ void CursorChaseBehavior::update(Pet::Clock::time_point now) {
     pet_.step(now);
 }
 
-} // namespace hyprneko
+} // namespace aymm

@@ -1,9 +1,9 @@
-#include "hyprneko/Pet.hpp"
+#include "aymm/Pet.hpp"
 
 #include <algorithm>
 #include <cmath>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -67,4 +67,4 @@ void Pet::step(Clock::time_point now) {
     fsm.tick(now);
 }
 
-} // namespace hyprneko
+} // namespace aymm

@@ -1,0 +1,17 @@
+[Unit]
+Description=Another Your MeowMeow Mate — Wayland-native desktop pet
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/aymm
+Restart=on-failure
+RestartSec=2
+
+# Hardening: aymm only needs read access to its config and write access
+# to $XDG_RUNTIME_DIR/aymm (for the control socket). Tighten further with
+# sandboxing options if your distro supports them.
+
+[Install]
+WantedBy=graphical-session.target

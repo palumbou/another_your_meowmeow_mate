@@ -1,4 +1,4 @@
-#include "hyprneko/Notifier.hpp"
+#include "aymm/Notifier.hpp"
 
 #include <cerrno>
 #include <cstring>
@@ -10,7 +10,7 @@
 
 extern char** environ;
 
-namespace hyprneko {
+namespace aymm {
 
 void Notifier::notify(std::string_view title,
                       std::string_view body,
@@ -21,11 +21,11 @@ void Notifier::notify(std::string_view title,
     const std::string body_s    { body };
     const std::string urgency_s { urgency };
 
-    // notify-send -u <urgency> -a hyprneko -- <title> <body>
+    // notify-send -u <urgency> -a aymm -- <title> <body>
     char* const argv[] = {
         const_cast<char*>("notify-send"),
         const_cast<char*>("-u"), const_cast<char*>(urgency_s.c_str()),
-        const_cast<char*>("-a"), const_cast<char*>("hyprneko"),
+        const_cast<char*>("-a"), const_cast<char*>("aymm"),
         const_cast<char*>("--"),
         const_cast<char*>(title_s.c_str()),
         const_cast<char*>(body_s.c_str()),
@@ -43,7 +43,7 @@ void Notifier::notify(std::string_view title,
     if (rc != 0) {
         if (!warned_once_) {
             warned_once_ = true;
-            std::cerr << "hyprneko: notify-send not available (" << ::strerror(rc)
+            std::cerr << "aymm: notify-send not available (" << ::strerror(rc)
                       << "); notifications disabled until restart.\n";
             enabled_ = false;
         }
@@ -56,4 +56,4 @@ void Notifier::notify(std::string_view title,
     while (::waitpid(-1, &status, WNOHANG) > 0) { /* drain */ }
 }
 
-} // namespace hyprneko
+} // namespace aymm

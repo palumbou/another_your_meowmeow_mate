@@ -1,22 +1,22 @@
-#include "hyprneko/Cli.hpp"
+#include "aymm/Cli.hpp"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-namespace hyprneko {
+namespace aymm {
 
 void print_help(std::ostream& os) {
     os <<
-"hyprneko — Wayland-native desktop pet (Hyprland-first)\n"
+"aymm — Wayland-native desktop pet (Hyprland-first)\n"
 "\n"
 "Usage:\n"
-"  hyprneko [run]                    Start the pet daemon (default).\n"
-"  hyprneko toggle                   Show/hide the pet on a running daemon.\n"
-"  hyprneko quit                     Tell the running daemon to exit.\n"
-"  hyprneko status                   Print human-readable daemon status.\n"
-"  hyprneko waybar-status            Print Waybar JSON (one shot).\n"
-"  hyprneko pomodoro <cmd>           Pomodoro control. <cmd> is one of:\n"
+"  aymm [run]                    Start the pet daemon (default).\n"
+"  aymm toggle                   Show/hide the pet on a running daemon.\n"
+"  aymm quit                     Tell the running daemon to exit.\n"
+"  aymm status                   Print human-readable daemon status.\n"
+"  aymm waybar-status            Print Waybar JSON (one shot).\n"
+"  aymm pomodoro <cmd>           Pomodoro control. <cmd> is one of:\n"
 "      start | pause | resume | stop | skip | toggle | status\n"
 "\n"
 "Options:\n"
@@ -26,7 +26,7 @@ void print_help(std::ostream& os) {
 }
 
 void print_version(std::ostream& os) {
-    os << "hyprneko " << HYPRNEKO_VERSION << "\n";
+    os << "aymm " << AYMM_VERSION << "\n";
 }
 
 CliResult parse_cli(int argc, char** argv) {
@@ -61,4 +61,4 @@ CliResult parse_cli(int argc, char** argv) {
     return r;
 }
 
-} // namespace hyprneko
+} // namespace aymm

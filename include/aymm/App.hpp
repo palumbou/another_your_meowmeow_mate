@@ -1,22 +1,22 @@
 #pragma once
 
-#include "hyprneko/Animation.hpp"
-#include "hyprneko/Config.hpp"
-#include "hyprneko/ControlSocket.hpp"
-#include "hyprneko/CursorChaseBehavior.hpp"
-#include "hyprneko/CursorProvider.hpp"
-#include "hyprneko/HyprlandCursorProvider.hpp"
-#include "hyprneko/Notifier.hpp"
-#include "hyprneko/NullCursorProvider.hpp"
-#include "hyprneko/OverlaySurface.hpp"
-#include "hyprneko/Pet.hpp"
-#include "hyprneko/PomodoroBehavior.hpp"
-#include "hyprneko/PomodoroTimer.hpp"
-#include "hyprneko/SpriteSheet.hpp"
+#include "aymm/Animation.hpp"
+#include "aymm/Config.hpp"
+#include "aymm/ControlSocket.hpp"
+#include "aymm/CursorChaseBehavior.hpp"
+#include "aymm/CursorProvider.hpp"
+#include "aymm/HyprlandCursorProvider.hpp"
+#include "aymm/Notifier.hpp"
+#include "aymm/NullCursorProvider.hpp"
+#include "aymm/OverlaySurface.hpp"
+#include "aymm/Pet.hpp"
+#include "aymm/PomodoroBehavior.hpp"
+#include "aymm/PomodoroTimer.hpp"
+#include "aymm/SpriteSheet.hpp"
 
 #include <memory>
 
-namespace hyprneko {
+namespace aymm {
 
 class App {
 public:
@@ -46,4 +46,4 @@ private:
     bool                    pet_visible_ = true;
 };
 
-} // namespace hyprneko
+} // namespace aymm

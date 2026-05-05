@@ -1,4 +1,4 @@
-#include "hyprneko/ControlSocket.hpp"
+#include "aymm/ControlSocket.hpp"
 
 #include <array>
 #include <cerrno>
@@ -10,7 +10,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 std::filesystem::path runtime_dir() {
@@ -21,7 +21,7 @@ std::filesystem::path runtime_dir() {
 } // namespace
 
 std::filesystem::path ControlSocket::default_path() {
-    return runtime_dir() / "hyprneko" / "control.sock";
+    return runtime_dir() / "aymm" / "control.sock";
 }
 
 ControlSocket::~ControlSocket() { close_server(); }
@@ -114,4 +114,4 @@ std::string ControlSocket::send_request(const std::string& req, std::string* err
     return reply;
 }
 
-} // namespace hyprneko
+} // namespace aymm

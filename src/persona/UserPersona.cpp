@@ -1,4 +1,4 @@
-#include "hyprneko/UserPersona.hpp"
+#include "aymm/UserPersona.hpp"
 
 #include <cctype>
 #include <cstdlib>
@@ -6,7 +6,7 @@
 #include <string>
 #include <unistd.h>
 
-namespace hyprneko {
+namespace aymm {
 
 namespace {
 
@@ -15,7 +15,7 @@ public:
     NeutralPersona() : UserPersona("Welcome back", "Pomodoro", "") {}
 };
 
-#ifdef HYPRNEKO_QUEEN_MODE
+#ifdef AYMM_QUEEN_MODE
 // Case-insensitive match of common Bianca variants. Kept tiny on purpose so
 // false positives stay rare (we don't want to greet random users as Queen).
 bool is_bianca(std::string_view name) {
@@ -53,7 +53,7 @@ std::string UserPersona::format_phase_tooltip(std::string_view phase_label,
 }
 
 const UserPersona& UserPersona::active() {
-#ifdef HYPRNEKO_QUEEN_MODE
+#ifdef AYMM_QUEEN_MODE
     static const QueenPersona  queen;
     static const NeutralPersona neutral;
     return is_bianca(current_username()) ? static_cast<const UserPersona&>(queen)
@@ -64,4 +64,4 @@ const UserPersona& UserPersona::active() {
 #endif
 }
 
-} // namespace hyprneko
+} // namespace aymm
