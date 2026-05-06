@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <poll.h>
 #include <sys/timerfd.h>
@@ -22,6 +23,14 @@ namespace {
 bool hyprland_session_detected() {
     const char* sig = std::getenv("HYPRLAND_INSTANCE_SIGNATURE");
     return sig && *sig;
+}
+
+bool kde_session_detected() {
+    const char* xdg = std::getenv("XDG_CURRENT_DESKTOP");
+    if (xdg && std::strstr(xdg, "KDE")) return true;
+    const char* full = std::getenv("KDE_FULL_SESSION");
+    if (full && *full) return true;
+    return false;
 }
 
 struct CursorPick {
@@ -53,10 +62,21 @@ CursorPick make_cursor_provider(CursorSource s) {
                              "reachable; trying evdev fallback.\n";
             } else {
                 std::cerr << "aymm: not on Hyprland; trying evdev cursor provider "
-                             "(works on KDE/sway/etc, requires the `input` group).\n";
+                             "(requires the `input` group).\n";
             }
             auto [ev, raw] = try_evdev();
-            if (ev) return { std::move(ev), raw };
+            if (ev) {
+                if (kde_session_detected()) {
+                    std::cerr << "aymm: KDE Plasma session detected. Heads-up: KWin uses "
+                                 "libinput which grabs /dev/input/event* exclusively "
+                                 "(EVIOCGRAB), so aymm's evdev reads return no events. "
+                                 "The cat will render but cursor chase will not work. "
+                                 "There is no public KDE API for cursor position. For a "
+                                 "working chase loop on Fedora, log into a Hyprland "
+                                 "session instead (`sudo dnf install hyprland`).\n";
+                }
+                return { std::move(ev), raw };
+            }
             std::cerr << "aymm: no cursor provider available; pet will sit still.\n";
             return { std::make_unique<NullCursorProvider>(), nullptr };
         }

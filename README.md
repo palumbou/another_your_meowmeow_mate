@@ -110,6 +110,16 @@ See [examples/hyprland-autostart.conf](examples/hyprland-autostart.conf).
 
 ## Pomodoro
 
+Run a session in one command (no daemon needed up front):
+
+```sh
+aymm --pomodoro                                       # use the defaults
+aymm --pomodoro --study-minutes 50 --break-minutes 10 # custom durations
+aymm --pomodoro --focus-corner top-left               # park in top-left
+```
+
+Or control an already-running daemon:
+
 ```sh
 aymm pomodoro start         # start a focus session
 aymm pomodoro pause
@@ -119,9 +129,19 @@ aymm pomodoro stop
 aymm pomodoro status        # human-readable
 ```
 
+CLI flags override the matching config keys:
+
+| Flag                                 | Config key                              |
+|--------------------------------------|------------------------------------------|
+| `--study-minutes N`                  | `pomodoro_study_minutes`                 |
+| `--break-minutes N`                  | `pomodoro_break_minutes`                 |
+| `--long-break-minutes N`             | `pomodoro_long_break_minutes`            |
+| `--sessions-before-long-break N`     | `pomodoro_sessions_before_long_break`    |
+| `--focus-corner C`                   | `pomodoro_focus_corner`                  |
+
 Phases reported in CLI / Waybar JSON: `focus`, `break`, `long_break`,
-`paused`, `stopped`. During focus the pet slows down and stays calm; during
-break it returns to its base speed and idle distance.
+`paused`, `stopped`. During focus the pet sleeps in its basket in the
+configured corner; during break it wakes up and chases the cursor again.
 
 ## Waybar module
 
@@ -161,14 +181,26 @@ aymm pomodoro <cmd>       start | pause | resume | stop | skip | toggle | status
 The CLI talks to the daemon over an AF_UNIX socket at
 `$XDG_RUNTIME_DIR/aymm/control.sock`.
 
+## Compositor support
+
+| Compositor                | Cursor chase | Notes                                                                                                            |
+|---------------------------|--------------|------------------------------------------------------------------------------------------------------------------|
+| Hyprland                  | ✅ works      | uses `hyprctl cursorpos` over the IPC socket — no permissions needed                                             |
+| KDE Plasma 6 / KWin       | ❌ no         | KWin uses libinput which `EVIOCGRAB`s the input devices exclusively, so aymm's evdev reads return zero events. The cat still **renders** in the basket; it just can't follow the mouse. There is no public KDE API for cursor position. |
+| sway / generic wlroots    | ⚠️ untested  | layer-shell renders fine; `evdev` works *if* the compositor's input backend doesn't grab exclusively (libinput does, so most wlroots compositors hit the same KDE issue). The Hyprland-style IPC is not exposed.                |
+
+**Practical advice on Fedora**: install Hyprland (`sudo dnf install hyprland`)
+and log into a Hyprland session for the chase loop. KDE Plasma is supported
+to the extent that the cat is drawn correctly, but the chase loop is a
+Wayland-stack-level limitation we can't work around without compositor-side
+changes.
+
 ## Limits & non-goals
 
-- **Cursor backend is Hyprland-only in v1.** The wlroots and evdev providers
-  are reserved stubs.
 - **No proprietary sprites.** Felix the Cat assets are not bundled and never
   will be. See [assets/sprites/neko/README.md](assets/sprites/neko/README.md).
-- **No keystroke logging.** The evdev backend (when implemented) will
-  whitelist `EV_REL`/`EV_ABS`/`BTN_*` only.
+- **No keystroke logging.** The evdev backend whitelists `EV_REL`/`EV_ABS`
+  only — never key codes. See [docs/cursor-providers.md](docs/cursor-providers.md).
 
 ## Layout
 

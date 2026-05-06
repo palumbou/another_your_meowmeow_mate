@@ -20,6 +20,14 @@ struct CliResult {
     std::string error;
     std::string config_path;
     bool autostart_pomodoro = false;   // --pomodoro flag (only for RunDaemon)
+
+    // Pomodoro overrides applied on top of the loaded config. -1 means
+    // "leave the loaded value alone".
+    int  study_min        = -1;
+    int  break_min        = -1;
+    int  long_break_min   = -1;
+    int  sessions_before_long_break = -1;
+    std::string focus_corner;          // empty = unchanged
 };
 
 CliResult parse_cli(int argc, char** argv);

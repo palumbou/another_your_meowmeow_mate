@@ -103,6 +103,16 @@ Vedi [examples/hyprland-autostart.conf](examples/hyprland-autostart.conf).
 
 ## Pomodoro
 
+Avvia una sessione con un solo comando (non serve daemon prima):
+
+```sh
+aymm --pomodoro                                       # con i default
+aymm --pomodoro --study-minutes 50 --break-minutes 10 # durate custom
+aymm --pomodoro --focus-corner top-left               # parcheggia in alto a sx
+```
+
+Oppure controlla un daemon già in esecuzione:
+
 ```sh
 aymm pomodoro start         # inizia una sessione di focus
 aymm pomodoro pause
@@ -112,9 +122,19 @@ aymm pomodoro stop
 aymm pomodoro status        # leggibile umano
 ```
 
+I flag CLI sovrascrivono le rispettive chiavi di config:
+
+| Flag                                 | Chiave di config                         |
+|--------------------------------------|------------------------------------------|
+| `--study-minutes N`                  | `pomodoro_study_minutes`                 |
+| `--break-minutes N`                  | `pomodoro_break_minutes`                 |
+| `--long-break-minutes N`             | `pomodoro_long_break_minutes`            |
+| `--sessions-before-long-break N`     | `pomodoro_sessions_before_long_break`    |
+| `--focus-corner C`                   | `pomodoro_focus_corner`                  |
+
 Fasi riportate da CLI / Waybar JSON: `focus`, `break`, `long_break`,
-`paused`, `stopped`. Durante il focus il pet rallenta e resta tranquillo;
-durante la pausa torna a velocità e idle distance di base.
+`paused`, `stopped`. In focus il gatto dorme nella cuccia nell'angolo
+configurato; in break si sveglia e ricomincia a inseguire il cursore.
 
 ## Modulo Waybar
 
@@ -154,15 +174,28 @@ aymm pomodoro <cmd>       start | pause | resume | stop | skip | toggle | status
 La CLI parla col daemon via socket AF_UNIX in
 `$XDG_RUNTIME_DIR/aymm/control.sock`.
 
+## Compositor supportati
+
+| Compositor                | Inseguimento | Note                                                                                                            |
+|---------------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
+| Hyprland                  | ✅ funziona   | usa `hyprctl cursorpos` via socket IPC — nessun permesso speciale                                                |
+| KDE Plasma 6 / KWin       | ❌ no         | KWin usa libinput che fa `EVIOCGRAB` esclusivo sui device input, quindi le `read()` di aymm non vedono niente. Il gatto **viene comunque renderizzato** nella cuccia; semplicemente non può inseguire il mouse. KDE non ha un'API pubblica per la posizione del cursore. |
+| sway / wlroots generico   | ⚠️ non testato | il layer-shell renderizza, `evdev` funziona *se* l'input backend del compositor non fa grab esclusivo (libinput sì, quindi la maggior parte dei wlroots ha lo stesso problema di KDE). L'IPC stile Hyprland non c'è. |
+
+**Consiglio pratico su Fedora**: installa Hyprland (`sudo dnf install hyprland`)
+e fai login in sessione Hyprland per avere la chase loop. KDE Plasma è
+supportato nella misura in cui il gatto viene disegnato correttamente, ma
+la chase loop è un limite a livello di stack Wayland che non possiamo
+aggirare senza modifiche lato compositor.
+
 ## Limiti e non-obiettivi
 
-- **Backend cursore solo Hyprland in v1.** I provider wlroots e evdev sono
-  stub riservati.
 - **Niente sprite proprietari.** Gli asset Felix the Cat non sono inclusi e
   non lo saranno mai. Vedi
   [assets/sprites/neko/README.it.md](assets/sprites/neko/README.it.md).
-- **Niente logging dei tasti.** Il backend evdev (quando implementato)
-  filtrerà solo `EV_REL`/`EV_ABS`/`BTN_*`.
+- **Niente logging dei tasti.** Il backend evdev whitelist-a solo
+  `EV_REL`/`EV_ABS` — mai key code. Vedi
+  [docs/cursor-providers.md](docs/cursor-providers.md).
 
 ## Layout
 
