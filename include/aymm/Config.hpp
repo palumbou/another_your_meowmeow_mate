@@ -10,6 +10,10 @@ enum class CursorSource { Auto, Hyprland, Wlroots, Evdev, Null };
 enum class Behavior     { CursorChase, Idle };
 enum class OverlayLayer { Background, Bottom, Top, Overlay };
 
+// Where the pet parks its basket during Pomodoro focus, to stay out of the
+// user's way. `None` keeps the pet wherever it was before focus started.
+enum class FocusCorner  { None, BottomRight, BottomLeft, TopRight, TopLeft, Center };
+
 struct Config {
     std::string  animation_name             = "neko";
     std::string  sprite_dir;
@@ -32,6 +36,8 @@ struct Config {
     int          pomodoro_sessions_before_long_break = 4;
     bool         pomodoro_auto_start        = false;
     bool         pomodoro_show_notifications= true;
+    FocusCorner  pomodoro_focus_corner      = FocusCorner::BottomRight;
+    int          pomodoro_focus_padding     = 100;   // px from the screen edge
 
     static Config load_or_default(const std::filesystem::path& path);
     static std::optional<Config> load(const std::filesystem::path& path);

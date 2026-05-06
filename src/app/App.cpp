@@ -148,6 +148,11 @@ int App::run() {
     pet_.position.x = primary.x + primary.w / 2.0;
     pet_.position.y = primary.y + primary.h / 2.0;
 
+    // If Pomodoro auto-started in the constructor (--pomodoro flag or config
+    // auto-start), the phase-change handler ran before the overlay knew the
+    // screen rect. Now that we have it, place the cat in the focus corner.
+    if (pomodoro_.phase() == PomodoroPhase::Focus) move_to_focus_corner();
+
     // Hand the evdev provider its clamping rectangle and a sensible initial
     // cursor position. Hyprland provider doesn't need this (it reports
     // absolute compositor coordinates).
@@ -241,6 +246,36 @@ void App::on_tick() {
     }
 }
 
+void App::move_to_focus_corner() {
+    const Rect r = overlay_.primary_output_rect();
+    if (r.w <= 0 || r.h <= 0) return;
+    const int pad = std::max(40, cfg_.pomodoro_focus_padding);
+    switch (cfg_.pomodoro_focus_corner) {
+        case FocusCorner::None: return;
+        case FocusCorner::Center:
+            pet_.position.x = r.x + r.w / 2.0;
+            pet_.position.y = r.y + r.h / 2.0;
+            break;
+        case FocusCorner::TopLeft:
+            pet_.position.x = r.x + pad;
+            pet_.position.y = r.y + pad;
+            break;
+        case FocusCorner::TopRight:
+            pet_.position.x = r.x + r.w - pad;
+            pet_.position.y = r.y + pad;
+            break;
+        case FocusCorner::BottomLeft:
+            pet_.position.x = r.x + pad;
+            pet_.position.y = r.y + r.h - pad;
+            break;
+        case FocusCorner::BottomRight:
+        default:
+            pet_.position.x = r.x + r.w - pad;
+            pet_.position.y = r.y + r.h - pad;
+            break;
+    }
+}
+
 void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
     const auto& persona = UserPersona::active();
     const std::string honor { persona.honorific() };
@@ -252,6 +287,11 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
         }
         say(bubble);
     };
+
+    // Park the cat in the configured corner whenever a Focus session starts
+    // (or resumes). On exit from Focus we leave the cat where it is — the
+    // chase loop will pick it up from there during the break.
+    if (to == PomodoroPhase::Focus) move_to_focus_corner();
 
     switch (to) {
         case PomodoroPhase::Focus:
