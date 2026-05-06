@@ -37,7 +37,9 @@ void print_help(std::ostream& os) {
 }
 
 void print_version(std::ostream& os) {
-    os << "aymm " << AYMM_VERSION << "\n";
+    os << "aymm " << AYMM_VERSION
+       << "+"      << AYMM_GIT_HASH
+       << " ("    << AYMM_BUILD_DATE << ")\n";
 }
 
 CliResult parse_cli(int argc, char** argv) {

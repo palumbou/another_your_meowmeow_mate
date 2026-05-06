@@ -68,9 +68,31 @@ target_link_libraries(aymm_core
         rt
 )
 
-# Build-time identifiers
+# Build-time identifiers — embed git short hash + commit date so users can
+# verify they are running the binary they think they are running.
+# The commit date is more useful than the build date because Nix forces
+# SOURCE_DATE_EPOCH=0 (1980-01-01) for reproducibility.
+set(AYMM_GIT_HASH "unknown")
+set(AYMM_BUILD_DATE "unknown")
+execute_process(
+    COMMAND git -C ${CMAKE_SOURCE_DIR} rev-parse --short=8 HEAD
+    OUTPUT_VARIABLE AYMM_GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET RESULT_VARIABLE AYMM_GIT_RC)
+if(NOT AYMM_GIT_RC EQUAL 0 OR NOT AYMM_GIT_HASH)
+    set(AYMM_GIT_HASH "unknown")
+endif()
+execute_process(
+    COMMAND git -C ${CMAKE_SOURCE_DIR} log -1 --format=%cs HEAD
+    OUTPUT_VARIABLE AYMM_BUILD_DATE OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET RESULT_VARIABLE AYMM_DATE_RC)
+if(NOT AYMM_DATE_RC EQUAL 0 OR NOT AYMM_BUILD_DATE)
+    set(AYMM_BUILD_DATE "unknown")
+endif()
+
 target_compile_definitions(aymm_core PUBLIC
     AYMM_VERSION="${PROJECT_VERSION}"
+    AYMM_GIT_HASH="${AYMM_GIT_HASH}"
+    AYMM_BUILD_DATE="${AYMM_BUILD_DATE}"
 )
 
 # This branch defaults the Queen persona override to ON. It activates only at
