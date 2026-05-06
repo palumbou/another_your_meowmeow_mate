@@ -69,24 +69,32 @@ target_link_libraries(aymm_core
 )
 
 # Build-time identifiers — embed git short hash + commit date so users can
-# verify they are running the binary they think they are running.
-# The commit date is more useful than the build date because Nix forces
-# SOURCE_DATE_EPOCH=0 (1980-01-01) for reproducibility.
-set(AYMM_GIT_HASH "unknown")
+# verify they are running the binary they think they are running. Two
+# fallbacks because the source can be either a git checkout (development)
+# or a release tarball with no .git history (Fedora/Ubuntu build):
+#   1. aymm-version-info.cmake ships in release tarballs (preferred)
+#   2. live `git` invocation in a checkout
+#   3. literal "unknown" otherwise
+set(AYMM_GIT_HASH   "unknown")
 set(AYMM_BUILD_DATE "unknown")
-execute_process(
-    COMMAND git -C ${CMAKE_SOURCE_DIR} rev-parse --short=8 HEAD
-    OUTPUT_VARIABLE AYMM_GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET RESULT_VARIABLE AYMM_GIT_RC)
-if(NOT AYMM_GIT_RC EQUAL 0 OR NOT AYMM_GIT_HASH)
-    set(AYMM_GIT_HASH "unknown")
+include(${CMAKE_SOURCE_DIR}/aymm-version-info.cmake OPTIONAL)
+if(AYMM_GIT_HASH STREQUAL "unknown")
+    execute_process(
+        COMMAND git -C ${CMAKE_SOURCE_DIR} rev-parse --short=8 HEAD
+        OUTPUT_VARIABLE _AYMM_GH OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE _AYMM_GH_RC)
+    if(_AYMM_GH_RC EQUAL 0 AND _AYMM_GH)
+        set(AYMM_GIT_HASH "${_AYMM_GH}")
+    endif()
 endif()
-execute_process(
-    COMMAND git -C ${CMAKE_SOURCE_DIR} log -1 --format=%cs HEAD
-    OUTPUT_VARIABLE AYMM_BUILD_DATE OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET RESULT_VARIABLE AYMM_DATE_RC)
-if(NOT AYMM_DATE_RC EQUAL 0 OR NOT AYMM_BUILD_DATE)
-    set(AYMM_BUILD_DATE "unknown")
+if(AYMM_BUILD_DATE STREQUAL "unknown")
+    execute_process(
+        COMMAND git -C ${CMAKE_SOURCE_DIR} log -1 --format=%cs HEAD
+        OUTPUT_VARIABLE _AYMM_GD OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET RESULT_VARIABLE _AYMM_GD_RC)
+    if(_AYMM_GD_RC EQUAL 0 AND _AYMM_GD)
+        set(AYMM_BUILD_DATE "${_AYMM_GD}")
+    endif()
 endif()
 
 target_compile_definitions(aymm_core PUBLIC
