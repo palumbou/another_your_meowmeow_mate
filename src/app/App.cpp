@@ -118,17 +118,25 @@ App::App(Config cfg, AppOptions opts)
     if (opts_.autostart_pomodoro || (cfg_.enable_pomodoro && cfg_.pomodoro_auto_start)) {
         pomodoro_.start();
     }
-    last_pomodoro_phase_ = pomodoro_.phase();
+    const bool starting_in_focus = (pomodoro_.phase() == PomodoroPhase::Focus);
 
-    // Greet on startup. Both notify-send (system tray) and the on-screen
-    // speech bubble (the cat tells you hello). Works for every persona —
-    // the persona just decides whether ", Queen" is appended.
-    {
+    if (starting_in_focus) {
+        // The cat is going straight into the basket to sleep — shouting
+        // "Welcome back" while it's curling up doesn't make sense. Fire the
+        // Focus phase-change handler instead so the user gets the proper
+        // "Focus session started" notification + bubble.
+        on_pomodoro_phase_changed(PomodoroPhase::Stopped, PomodoroPhase::Focus);
+    } else {
+        // Normal startup greeting. Both notify-send (system tray) and the
+        // on-screen speech bubble (the cat tells you hello). Persona just
+        // decides whether ", Queen" is appended.
         const auto& persona = UserPersona::active();
         const std::string greet = std::string(persona.greeting()) + "!";
         notifier_.notify("aymm", greet, "low");
         say(greet);
     }
+
+    last_pomodoro_phase_ = pomodoro_.phase();
 }
 
 void App::say(std::string_view text, std::chrono::milliseconds duration) {

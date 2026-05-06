@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cairo/cairo.h>
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <linux/memfd.h>
@@ -305,7 +306,39 @@ OverlaySurface::~OverlaySurface() {
 
 bool OverlaySurface::connect(const Config& cfg, std::string& err) {
     impl_->display = wl_display_connect(nullptr);
-    if (!impl_->display) { err = "wl_display_connect failed"; return false; }
+    if (!impl_->display) {
+        // Most common cause: running as root (sudo / su -) inside a normal
+        // user's Wayland session. WAYLAND_DISPLAY and XDG_RUNTIME_DIR are
+        // not propagated, so wl_display_connect can't find the socket.
+        const char* wd  = std::getenv("WAYLAND_DISPLAY");
+        const char* xdg = std::getenv("XDG_RUNTIME_DIR");
+        const bool is_root = (::getuid() == 0);
+        std::string msg = "wl_display_connect failed: ";
+        if (!wd || !*wd) {
+            msg += "WAYLAND_DISPLAY is not set";
+            if (is_root) {
+                msg += " — you ran aymm as root (sudo / su -). Wayland sessions"
+                       " belong to your normal user; root inherits an empty env."
+                       " Run aymm as YOUR user, from a terminal opened inside"
+                       " Hyprland or KDE Plasma.";
+            } else {
+                msg += " — open a terminal inside your Wayland session and try"
+                       " again. SSH terminals don't have a Wayland session.";
+            }
+        } else if (!xdg || !*xdg) {
+            msg += "XDG_RUNTIME_DIR is not set";
+            if (is_root) {
+                msg += " — you ran aymm as root, which strips the variable. Run"
+                       " aymm as your normal user instead.";
+            }
+        } else {
+            msg += "the socket at $XDG_RUNTIME_DIR/" + std::string(wd) +
+                   " is not reachable. Is the compositor running and is your"
+                   " user the owner of the socket?";
+        }
+        err = msg;
+        return false;
+    }
     impl_->layer           = cfg.overlay_layer;
     impl_->monitor_request = cfg.monitor;
 
