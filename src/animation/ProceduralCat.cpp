@@ -240,22 +240,37 @@ void draw_basket_and_curled_cat(cairo_t* cr, int frame) {
         cairo_stroke(cr);
     }
 
-    // Cosy cushion peeking inside the basket, behind the cat's back.
-    cairo_set_source_rgba(cr, 0.85, 0.55, 0.55, 1.0);
+    // Cosy pink cushion peeking inside the basket, behind the cat's back.
+    // Brighter and slightly larger than v1 so the pink really pops.
+    cairo_set_source_rgba(cr, 0.96, 0.62, 0.72, 1.0);
     cairo_save(cr);
     cairo_translate(cr, 0, 7);
-    cairo_scale(cr, 1.0, 0.42);
-    cairo_arc(cr, 0, 0, 14, kPi, 2 * kPi);
+    cairo_scale(cr, 1.05, 0.5);
+    cairo_arc(cr, 0, 0, 14.5, kPi, 2 * kPi);
     cairo_restore(cr);
     cairo_fill_preserve(cr);
-    cairo_set_source_rgba(cr, 0.55, 0.30, 0.30, 0.8);
-    cairo_set_line_width(cr, 0.4);
+    cairo_set_source_rgba(cr, 0.70, 0.32, 0.42, 0.9);
+    cairo_set_line_width(cr, 0.5);
     cairo_stroke(cr);
-    // Two tiny stitches on the cushion.
-    cairo_set_source_rgba(cr, 0.55, 0.30, 0.30, 0.8);
-    cairo_set_line_width(cr, 0.35);
-    cairo_move_to(cr, -4, 6.2); cairo_line_to(cr, -3, 6.2); cairo_stroke(cr);
-    cairo_move_to(cr,  3, 6.2); cairo_line_to(cr,  4, 6.2); cairo_stroke(cr);
+    // Plump highlight along the top of the cushion to give it volume.
+    cairo_set_source_rgba(cr, 1.00, 0.85, 0.90, 0.85);
+    cairo_set_line_width(cr, 0.6);
+    cairo_save(cr);
+    cairo_translate(cr, 0, 5.5);
+    cairo_scale(cr, 1.0, 0.45);
+    cairo_arc(cr, 0, 0, 13.0, kPi + 0.2, 2 * kPi - 0.2);
+    cairo_restore(cr);
+    cairo_stroke(cr);
+    // Stitches across the cushion — a row of short pink dashes.
+    cairo_set_source_rgba(cr, 0.65, 0.25, 0.40, 0.95);
+    cairo_set_line_width(cr, 0.45);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    for (int i = -3; i <= 3; ++i) {
+        const double x = i * 3.2;
+        cairo_move_to(cr, x - 0.7, 6.0);
+        cairo_line_to(cr, x + 0.7, 6.0);
+        cairo_stroke(cr);
+    }
 
     // ---- Cat curled in a near-circle ---------------------------------------
     cairo_set_source_rgba(cr, 0.96, 0.96, 0.96, 1.0);
@@ -374,6 +389,94 @@ void draw_basket_and_curled_cat(cairo_t* cr, int frame) {
     cairo_arc(cr, 0, 0, 15.5, kPi + 0.15, 2 * kPi - 0.15);
     cairo_restore(cr);
     cairo_stroke(cr);
+
+    // ---- Pink ribbon trim hugging the top of the front rim ----------------
+    // A wide soft pink band sits over the join between the rim and the
+    // cushion, peeking out either side of the cat's belly.
+    cairo_set_source_rgba(cr, 0.96, 0.62, 0.72, 0.95);
+    cairo_set_line_width(cr, 1.4);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_save(cr);
+    cairo_translate(cr, 0, 11);
+    cairo_scale(cr, 1.0, 0.6);
+    cairo_arc(cr, 0, 0, 16.2, kPi + 0.1, 2 * kPi - 0.1);
+    cairo_restore(cr);
+    cairo_stroke(cr);
+    // Darker pink piping just below for contrast (gives the ribbon depth).
+    cairo_set_source_rgba(cr, 0.78, 0.40, 0.52, 0.9);
+    cairo_set_line_width(cr, 0.5);
+    cairo_save(cr);
+    cairo_translate(cr, 0, 11.7);
+    cairo_scale(cr, 1.0, 0.6);
+    cairo_arc(cr, 0, 0, 16.0, kPi + 0.15, 2 * kPi - 0.15);
+    cairo_restore(cr);
+    cairo_stroke(cr);
+
+    // ---- Three tiny pink hearts decorating the front rim ------------------
+    auto path_heart = [&](double cx, double cy, double r) {
+        // Two overlapping circular lobes + a triangle pointing down.
+        cairo_new_sub_path(cr);
+        cairo_arc(cr, cx - r * 0.55, cy - r * 0.30, r * 0.65, 0, 2 * kPi);
+        cairo_new_sub_path(cr);
+        cairo_arc(cr, cx + r * 0.55, cy - r * 0.30, r * 0.65, 0, 2 * kPi);
+        cairo_new_sub_path(cr);
+        cairo_move_to(cr, cx - r * 0.95, cy);
+        cairo_line_to(cr, cx + r * 0.95, cy);
+        cairo_line_to(cr, cx,            cy + r * 1.25);
+        cairo_close_path(cr);
+    };
+    cairo_set_source_rgba(cr, 0.94, 0.40, 0.55, 1.0);
+    path_heart(-10.5, 14.2, 1.1); cairo_fill(cr);
+    path_heart( 10.5, 14.2, 1.1); cairo_fill(cr);
+    path_heart(  0.0, 15.3, 1.0); cairo_fill(cr);
+    // Tiny white sparkle on each heart.
+    cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.85);
+    cairo_arc(cr, -10.85, 13.85, 0.30, 0, 2 * kPi); cairo_fill(cr);
+    cairo_arc(cr,  10.15, 13.85, 0.30, 0, 2 * kPi); cairo_fill(cr);
+    cairo_arc(cr,  -0.35, 14.95, 0.27, 0, 2 * kPi); cairo_fill(cr);
+
+    // ---- Pink bow tied to the front-center top of the basket --------------
+    // Knot, two loops, two ribbon tails. Sits just above the front rim,
+    // a touch off-center so it reads as a real ornament.
+    const double bx = 0.0, by = 10.6;
+    // Two loops
+    cairo_set_source_rgba(cr, 0.96, 0.55, 0.68, 1.0);
+    cairo_save(cr);
+    cairo_translate(cr, bx - 1.7, by);
+    cairo_rotate(cr, -0.35);
+    cairo_scale(cr, 1.0, 0.55);
+    cairo_arc(cr, 0, 0, 1.7, 0, 2 * kPi);
+    cairo_restore(cr);
+    cairo_fill(cr);
+    cairo_save(cr);
+    cairo_translate(cr, bx + 1.7, by);
+    cairo_rotate(cr,  0.35);
+    cairo_scale(cr, 1.0, 0.55);
+    cairo_arc(cr, 0, 0, 1.7, 0, 2 * kPi);
+    cairo_restore(cr);
+    cairo_fill(cr);
+    // Ribbon tails dangling down across the rim
+    cairo_set_source_rgba(cr, 0.96, 0.55, 0.68, 1.0);
+    cairo_move_to(cr, bx - 0.8, by + 0.5);
+    cairo_line_to(cr, bx - 1.6, by + 3.6);
+    cairo_line_to(cr, bx - 0.4, by + 3.4);
+    cairo_line_to(cr, bx - 0.0, by + 0.7);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+    cairo_move_to(cr, bx + 0.8, by + 0.5);
+    cairo_line_to(cr, bx + 1.6, by + 3.6);
+    cairo_line_to(cr, bx + 0.4, by + 3.4);
+    cairo_line_to(cr, bx + 0.0, by + 0.7);
+    cairo_close_path(cr);
+    cairo_fill(cr);
+    // Central knot
+    cairo_set_source_rgba(cr, 0.78, 0.38, 0.50, 1.0);
+    cairo_arc(cr, bx, by, 0.85, 0, 2 * kPi);
+    cairo_fill(cr);
+    // Tiny knot highlight
+    cairo_set_source_rgba(cr, 1.0, 0.85, 0.92, 0.9);
+    cairo_arc(cr, bx - 0.25, by - 0.25, 0.30, 0, 2 * kPi);
+    cairo_fill(cr);
 
     draw_zzz(cr, frame);
 }
