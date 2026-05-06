@@ -55,6 +55,26 @@ int main(int argc, char** argv) {
     }
     Config cfg = loaded.value_or(Config{});
 
+    // Apply CLI overrides on top of the loaded config. Negative / empty
+    // means "leave the config value alone".
+    if (cli.study_min                  > 0) cfg.pomodoro_study_minutes              = cli.study_min;
+    if (cli.break_min                  > 0) cfg.pomodoro_break_minutes              = cli.break_min;
+    if (cli.long_break_min             > 0) cfg.pomodoro_long_break_minutes         = cli.long_break_min;
+    if (cli.sessions_before_long_break > 0) cfg.pomodoro_sessions_before_long_break = cli.sessions_before_long_break;
+    if (!cli.focus_corner.empty()) {
+        if      (cli.focus_corner == "bottom-right") cfg.pomodoro_focus_corner = FocusCorner::BottomRight;
+        else if (cli.focus_corner == "bottom-left")  cfg.pomodoro_focus_corner = FocusCorner::BottomLeft;
+        else if (cli.focus_corner == "top-right")    cfg.pomodoro_focus_corner = FocusCorner::TopRight;
+        else if (cli.focus_corner == "top-left")     cfg.pomodoro_focus_corner = FocusCorner::TopLeft;
+        else if (cli.focus_corner == "center")       cfg.pomodoro_focus_corner = FocusCorner::Center;
+        else if (cli.focus_corner == "none")         cfg.pomodoro_focus_corner = FocusCorner::None;
+        else {
+            std::cerr << "aymm: invalid --focus-corner '" << cli.focus_corner
+                      << "' (expected: bottom-right|bottom-left|top-right|top-left|center|none)\n";
+            return 2;
+        }
+    }
+
     AppOptions opts;
     opts.autostart_pomodoro = cli.autostart_pomodoro;
 
