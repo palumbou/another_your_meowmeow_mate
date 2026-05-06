@@ -205,15 +205,57 @@ void draw_zzz(cairo_t* cr, int frame) {
 // flank, and the tail wrapped around the front. The basket is a woven
 // half-ellipse the cat sits in.
 void draw_basket_and_curled_cat(cairo_t* cr, int frame) {
+    // Soft floor shadow under the basket — sells the "object on a surface"
+    // perception and visually anchors the basket to the screen.
+    cairo_save(cr);
+    cairo_translate(cr, 0, 17);
+    cairo_scale(cr, 1.0, 0.35);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.22);
+    cairo_arc(cr, 0, 0, 18, 0, 2 * kPi);
+    cairo_fill(cr);
+    cairo_restore(cr);
+
     // ---- Basket (back half drawn first so it sits behind the cat) -----------
-    // Back rim
-    cairo_set_source_rgba(cr, 0.55, 0.40, 0.25, 1.0);
+    // Back rim — warm wood with a darker shadow at the very back so the
+    // basket reads as concave (the rim is closer to us than the bottom).
+    cairo_set_source_rgba(cr, 0.50, 0.34, 0.20, 1.0);
     cairo_save(cr);
     cairo_translate(cr, 0, 8);
-    cairo_scale(cr, 1.0, 0.45);
+    cairo_scale(cr, 1.0, 0.5);
     cairo_arc(cr, 0, 0, 16, kPi, 2 * kPi);
     cairo_restore(cr);
-    cairo_fill(cr);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgba(cr, 0.28, 0.18, 0.08, 0.95);
+    cairo_set_line_width(cr, 0.7);
+    cairo_stroke(cr);
+
+    // Subtle weave on the back rim (a few thin diagonal strokes peeking out
+    // above the cat's back).
+    cairo_set_source_rgba(cr, 0.36, 0.22, 0.10, 0.55);
+    cairo_set_line_width(cr, 0.4);
+    for (int i = -3; i <= 3; ++i) {
+        const double x = i * 4.0;
+        cairo_move_to(cr, x - 1.2, 4.5);
+        cairo_line_to(cr, x + 1.2, 8.0);
+        cairo_stroke(cr);
+    }
+
+    // Cosy cushion peeking inside the basket, behind the cat's back.
+    cairo_set_source_rgba(cr, 0.85, 0.55, 0.55, 1.0);
+    cairo_save(cr);
+    cairo_translate(cr, 0, 7);
+    cairo_scale(cr, 1.0, 0.42);
+    cairo_arc(cr, 0, 0, 14, kPi, 2 * kPi);
+    cairo_restore(cr);
+    cairo_fill_preserve(cr);
+    cairo_set_source_rgba(cr, 0.55, 0.30, 0.30, 0.8);
+    cairo_set_line_width(cr, 0.4);
+    cairo_stroke(cr);
+    // Two tiny stitches on the cushion.
+    cairo_set_source_rgba(cr, 0.55, 0.30, 0.30, 0.8);
+    cairo_set_line_width(cr, 0.35);
+    cairo_move_to(cr, -4, 6.2); cairo_line_to(cr, -3, 6.2); cairo_stroke(cr);
+    cairo_move_to(cr,  3, 6.2); cairo_line_to(cr,  4, 6.2); cairo_stroke(cr);
 
     // ---- Cat curled in a near-circle ---------------------------------------
     cairo_set_source_rgba(cr, 0.96, 0.96, 0.96, 1.0);
@@ -269,26 +311,69 @@ void draw_basket_and_curled_cat(cairo_t* cr, int frame) {
     cairo_arc(cr, 0, 10, 1.6, 0, 2 * kPi); cairo_fill(cr);
 
     // ---- Basket (front rim, drawn last so it overlaps the cat's belly) -----
-    cairo_set_source_rgba(cr, 0.65, 0.48, 0.30, 1.0);
-    cairo_save(cr);
-    cairo_translate(cr, 0, 11);
-    cairo_scale(cr, 1.0, 0.55);
-    cairo_arc(cr, 0, 0, 16, 0, kPi);
-    cairo_restore(cr);
-    cairo_fill_preserve(cr);
-    cairo_set_source_rgba(cr, 0.35, 0.22, 0.10, 0.9);
-    cairo_set_line_width(cr, 0.6);
+    // Linear gradient gives the front a subtle rim-light at the top.
+    {
+        cairo_pattern_t* grad = cairo_pattern_create_linear(0, 9, 0, 17);
+        cairo_pattern_add_color_stop_rgb(grad, 0.0, 0.78, 0.58, 0.36);  // top highlight
+        cairo_pattern_add_color_stop_rgb(grad, 1.0, 0.50, 0.34, 0.18);  // shadow at bottom
+        cairo_save(cr);
+        cairo_translate(cr, 0, 11);
+        cairo_scale(cr, 1.0, 0.6);
+        cairo_arc(cr, 0, 0, 16, 0, kPi);
+        cairo_restore(cr);
+        cairo_set_source(cr, grad);
+        cairo_fill_preserve(cr);
+        cairo_pattern_destroy(grad);
+    }
+    cairo_set_source_rgba(cr, 0.28, 0.18, 0.08, 0.95);
+    cairo_set_line_width(cr, 0.7);
     cairo_stroke(cr);
 
-    // Weave lines on the front rim for the basket look.
-    cairo_set_source_rgba(cr, 0.40, 0.27, 0.13, 0.7);
-    cairo_set_line_width(cr, 0.5);
+    // Crosshatch weave: alternating short strokes shifted up/down so the
+    // grid actually reads as a basket weave instead of bare verticals.
+    cairo_set_source_rgba(cr, 0.33, 0.20, 0.09, 0.85);
+    cairo_set_line_width(cr, 0.6);
     for (int i = -3; i <= 3; ++i) {
         const double x = i * 4.0;
-        cairo_move_to(cr, x, 11);
-        cairo_line_to(cr, x, 16);
+        // vertical strands
+        cairo_move_to(cr, x, 11.2);
+        cairo_line_to(cr, x, 16.0);
         cairo_stroke(cr);
     }
+    // horizontal weave (two staggered rows)
+    cairo_set_source_rgba(cr, 0.42, 0.27, 0.12, 0.85);
+    cairo_set_line_width(cr, 0.55);
+    for (int i = -3; i <= 3; ++i) {
+        const double x = i * 4.0;
+        const double yo = (i & 1) ? 0.0 : 1.6;
+        cairo_move_to(cr, x - 1.6, 12.8 + yo);
+        cairo_line_to(cr, x + 1.6, 12.8 + yo);
+        cairo_stroke(cr);
+        cairo_move_to(cr, x - 1.6, 14.6 - yo);
+        cairo_line_to(cr, x + 1.6, 14.6 - yo);
+        cairo_stroke(cr);
+    }
+
+    // Two small handles on the sides, like a wicker basket.
+    cairo_set_source_rgba(cr, 0.36, 0.22, 0.10, 1.0);
+    cairo_set_line_width(cr, 1.0);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_move_to(cr, -16.0, 11.5);
+    cairo_curve_to(cr, -18.5, 11.5, -18.5, 14.5, -16.0, 14.5);
+    cairo_stroke(cr);
+    cairo_move_to(cr,  16.0, 11.5);
+    cairo_curve_to(cr,  18.5, 11.5,  18.5, 14.5,  16.0, 14.5);
+    cairo_stroke(cr);
+
+    // Top rim highlight — a thin bright line where the wood catches the light.
+    cairo_set_source_rgba(cr, 0.95, 0.85, 0.65, 0.55);
+    cairo_set_line_width(cr, 0.55);
+    cairo_save(cr);
+    cairo_translate(cr, 0, 11);
+    cairo_scale(cr, 1.0, 0.6);
+    cairo_arc(cr, 0, 0, 15.5, kPi + 0.15, 2 * kPi - 0.15);
+    cairo_restore(cr);
+    cairo_stroke(cr);
 
     draw_zzz(cr, frame);
 }

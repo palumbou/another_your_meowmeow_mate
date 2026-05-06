@@ -35,6 +35,15 @@ Behavior parse_behavior(const std::string& v) {
     return Behavior::Idle;
 }
 
+FocusCorner parse_focus_corner(const std::string& v) {
+    if (v == "none")          return FocusCorner::None;
+    if (v == "bottom-left"   ) return FocusCorner::BottomLeft;
+    if (v == "top-right"     ) return FocusCorner::TopRight;
+    if (v == "top-left"      ) return FocusCorner::TopLeft;
+    if (v == "center"        ) return FocusCorner::Center;
+    return FocusCorner::BottomRight;  // default
+}
+
 OverlayLayer parse_layer(const std::string& v) {
     if (v == "background") return OverlayLayer::Background;
     if (v == "bottom")     return OverlayLayer::Bottom;
@@ -88,6 +97,8 @@ std::optional<Config> Config::load(const std::filesystem::path& path) {
             c.pomodoro_sessions_before_long_break = std::atoi(v.c_str());
         else if (k == "pomodoro_auto_start")          c.pomodoro_auto_start = parse_bool(v);
         else if (k == "pomodoro_show_notifications")  c.pomodoro_show_notifications = parse_bool(v);
+        else if (k == "pomodoro_focus_corner")        c.pomodoro_focus_corner = parse_focus_corner(v);
+        else if (k == "pomodoro_focus_padding")       c.pomodoro_focus_padding = std::atoi(v.c_str());
     }
     return c;
 }
