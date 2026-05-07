@@ -1,6 +1,6 @@
-# Architecture
+# Architettura
 
-> **Available languages**: [English (current)](architecture.md) | [Italiano](architecture.it.md)
+> **Lingue disponibili**: [English](architecture.md) | [Italiano (corrente)](architecture.it.md)
 
 
 ```
@@ -25,30 +25,30 @@
                                                             |
                                               +--------------------------+
                                               |  Control socket (UNIX)   |
-                                              |  aymm CLI <-> daemon |
+                                              |  aymm CLI <-> daemon     |
                                               +--------------------------+
 ```
 
-Each box maps to one directory under `src/`:
+Ogni box è una directory sotto `src/`:
 
-| Module                | Directory             | Compiles to       |
-|-----------------------|-----------------------|-------------------|
-| Wayland overlay       | `src/wayland/`        | layer-shell loop  |
-| Cursor providers      | `src/cursor/`         | per-source impls  |
-| Pet AI                | `src/pet/`            | FSM + behaviors   |
-| Sprite/animation      | `src/animation/`      | Cairo PNG loader  |
-| Pomodoro              | `src/pomodoro/`       | pure timer        |
-| Waybar                | `src/waybar/`         | JSON formatter    |
-| Persona               | `src/persona/`        | greetings/labels  |
-| CLI / control IPC     | `src/cli/`            | argv parser + sock|
-| App glue              | `src/app/`            | run loop          |
+| Modulo                    | Directory             | Compila in        |
+|---------------------------|-----------------------|-------------------|
+| Wayland overlay           | `src/wayland/`        | layer-shell loop  |
+| Cursor providers          | `src/cursor/`         | implementazioni per backend |
+| Pet AI                    | `src/pet/`            | FSM + behaviors   |
+| Sprite/animation          | `src/animation/`      | loader Cairo PNG  |
+| Pomodoro                  | `src/pomodoro/`       | timer puro        |
+| Waybar                    | `src/waybar/`         | formatter JSON    |
+| Persona                   | `src/persona/`        | saluti/etichette  |
+| CLI / control IPC         | `src/cli/`            | parser argv + sock|
+| App glue                  | `src/app/`            | run loop          |
 
-The Wayland event loop (driven by `wl_display_dispatch`) is multiplexed via
-`poll(2)` against:
+L'event loop Wayland (driven da `wl_display_dispatch`) viene multiplexato via
+`poll(2)` su:
 
-- the Wayland fd (frame callbacks, configure events),
-- a `timerfd` ticking at `cursor_poll_hz` (drives cursor poll + pet step),
-- the control socket fd (CLI subcommands).
+- l'fd Wayland (frame callback, eventi configure),
+- un `timerfd` che ticka a `cursor_poll_hz` (drive cursor poll + pet step),
+- l'fd del control socket (subcomandi CLI).
 
-Rendering happens whenever the compositor sends a frame callback. The tick
-timer requests a redraw via `OverlaySurface::schedule_redraw()`.
+Il rendering avviene quando il compositor manda una frame callback. Il
+tick timer richiede un redraw via `OverlaySurface::schedule_redraw()`.

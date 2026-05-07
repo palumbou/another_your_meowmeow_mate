@@ -14,24 +14,26 @@ inspired by oneko, with no X11/XWayland in the stack.
 
 ## Status
 
-This is **v0.1**. The build is green, the binary runs, the CLI and Waybar
-output work. The Wayland overlay + cursor chase loop is wired end-to-end
-on Hyprland; if you don't supply a sprite sheet, the pet renders as an
-orange circle so you can validate the chase loop without art.
+**v0.1**. Build green, CLI and Waybar output working, Wayland overlay
+and cursor-chase loop wired end-to-end on Hyprland. Out of the box,
+without any external sprite asset, the pet is a small white cat drawn
+with Cairo paths — head, ears, eyes (with pupils), tail wag, leg
+animation, sleep pose curled in a pink basket with bow and hearts.
 
-## Why another oneko
+## Why a Wayland-native pet
 
-Most existing forks of oneko (e.g. [IreneKnapp/oneko](https://github.com/IreneKnapp/oneko),
-[glreno/oneko](https://github.com/glreno/oneko)) target X11 directly, and the
-Java port also goes through XWayland on modern Linux. Another Your MeowMeow Mate is built on
-top of `wlr-layer-shell-unstable-v1` and `wayland-client`, so it composites
-as a real Wayland overlay layer with no X server involved. The architecture
-is inspired by [furudbat/wayland-vpets](https://github.com/furudbat/wayland-vpets)
+Existing oneko forks (e.g. [IreneKnapp/oneko](https://github.com/IreneKnapp/oneko),
+[glreno/oneko](https://github.com/glreno/oneko)) target X11 directly,
+and the Java port also goes through XWayland on modern Linux. aymm is
+built on top of `wlr-layer-shell-unstable-v1` and `wayland-client`, so
+it composites as a real Wayland overlay layer with no X server involved.
+The architecture is inspired by
+[furudbat/wayland-vpets](https://github.com/furudbat/wayland-vpets)
 (C++/CMake, layer-shell, Cairo).
 
 The interesting Wayland constraint is that **cursor position is never
 broadcast to arbitrary clients**, so the chase loop needs an out-of-band
-source. Another Your MeowMeow Mate abstracts that behind `CursorProvider`. The default backend
+source. aymm abstracts that behind `CursorProvider`. The default backend
 talks to Hyprland's IPC socket (no `hyprctl` fork). See
 [docs/cursor-providers.md](docs/cursor-providers.md).
 
@@ -53,13 +55,19 @@ Required system packages:
 | Fedora   | `sudo dnf install cmake gcc-c++ pkgconf-pkg-config wayland-devel wayland-protocols-devel cairo-devel` |
 | Ubuntu   | `sudo apt install build-essential cmake pkg-config libwayland-dev wayland-protocols libwayland-bin libcairo2-dev` |
 
-### Nix flake
+### Nix
+
+Two equivalent options on NixOS / nix-enabled systems:
 
 ```sh
+# Flake (recommended)
 nix build .#aymm          # build
 nix run  .#aymm           # run
-nix develop                   # dev shell with all build deps
+nix develop               # dev shell with all build deps
 nix build .#aymm-queen    # build with the Queen persona override
+
+# Plain shell.nix (no flake required)
+nix-shell                 # picks up shell.nix from the project root
 ```
 
 ## Configure
@@ -91,11 +99,11 @@ pomodoro_study_minutes=25
 pomodoro_break_minutes=5
 ```
 
-Sprite sheets are optional. To use one, point `sprite_dir=` at a directory
-that contains a `sheet.conf` and the matching PNG. See
+Sprite sheets are optional — the procedural cat is the default. To
+swap in your own art, drop a PNG into `assets/sprites/default/` (next
+to `sheet.conf`) and set `sprite_dir=` in your config to that path. See
 [docs/sprite-format.md](docs/sprite-format.md) and
-[assets/sprites/neko/README.md](assets/sprites/neko/README.md) — including
-the licensing notes about why no PNG ships with the repo.
+[assets/sprites/default/README.md](assets/sprites/default/README.md).
 
 ## Hyprland autostart
 
@@ -197,8 +205,6 @@ changes.
 
 ## Limits & non-goals
 
-- **No proprietary sprites.** Felix the Cat assets are not bundled and never
-  will be. See [assets/sprites/neko/README.md](assets/sprites/neko/README.md).
 - **No keystroke logging.** The evdev backend whitelists `EV_REL`/`EV_ABS`
   only — never key codes. See [docs/cursor-providers.md](docs/cursor-providers.md).
 
@@ -240,7 +246,9 @@ src/
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[CC BY-NC 4.0](LICENSE) — Creative Commons Attribution-NonCommercial 4.0
+International. Use, share, and remix for non-commercial purposes with
+attribution. For commercial use please get in touch first.
 
-The XML for `wlr-layer-shell-unstable-v1` is vendored under the same MIT-like
-permissive license as the upstream wlr-protocols.
+The XML for `wlr-layer-shell-unstable-v1` is vendored under the same
+permissive (MIT-like) license as the upstream wlr-protocols.
