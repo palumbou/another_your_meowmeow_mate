@@ -7,16 +7,18 @@ a oneko, senza X11/XWayland nello stack.
 
 ## Stato
 
-Versione **0.1**. La build compila, il binario gira, CLI e output Waybar
-funzionano. Overlay Wayland + loop di cursor-chase sono cablati end-to-end su
-Hyprland; se non fornisci uno sprite sheet, il pet viene renderizzato come
-cerchio arancione così puoi validare il chase loop anche senza arte.
+**v0.1**. Build verde, CLI e output Waybar funzionanti, overlay Wayland
+e loop di cursor-chase cablati end-to-end su Hyprland. Out of the box,
+senza alcun asset sprite esterno, il pet è un piccolo gatto bianco
+disegnato con path Cairo — testa, orecchie, occhi (con pupille), coda
+che oscilla, animazione delle zampe, posa sleep raggomitolata in una
+cuccia rosa con fiocco e cuoricini.
 
-## Perché un altro oneko
+## Perché un pet Wayland-native
 
 I fork di oneko esistenti (es. [IreneKnapp/oneko](https://github.com/IreneKnapp/oneko),
 [glreno/oneko](https://github.com/glreno/oneko)) puntano direttamente a X11,
-e il port Java passa comunque da XWayland sui Linux moderni. Another Your MeowMeow Mate è
+e il port Java passa comunque da XWayland sui Linux moderni. aymm è
 costruito su `wlr-layer-shell-unstable-v1` e `wayland-client`, quindi
 compone come overlay Wayland reale senza X server di mezzo. L'architettura
 si ispira a [furudbat/wayland-vpets](https://github.com/furudbat/wayland-vpets)
@@ -24,9 +26,9 @@ si ispira a [furudbat/wayland-vpets](https://github.com/furudbat/wayland-vpets)
 
 Il vincolo Wayland interessante è che la **posizione del cursore non è mai
 trasmessa ai client generici**, quindi il chase loop ha bisogno di una
-sorgente fuori-banda. Another Your MeowMeow Mate la astrae dietro `CursorProvider`. Il
-backend di default parla con il socket IPC di Hyprland (senza fork di
-`hyprctl`). Vedi [docs/cursor-providers.md](docs/cursor-providers.md).
+sorgente fuori-banda. aymm la astrae dietro `CursorProvider`. Il backend
+di default parla con il socket IPC di Hyprland (senza fork di
+`hyprctl`). Vedi [docs/cursor-providers.it.md](docs/cursor-providers.it.md).
 
 ## Build
 
@@ -46,13 +48,19 @@ Pacchetti di sistema richiesti:
 | Fedora   | `sudo dnf install cmake gcc-c++ pkgconf-pkg-config wayland-devel wayland-protocols-devel cairo-devel` |
 | Ubuntu   | `sudo apt install build-essential cmake pkg-config libwayland-dev wayland-protocols libwayland-bin libcairo2-dev` |
 
-### Nix flake
+### Nix
+
+Due opzioni equivalenti su NixOS / sistemi con nix:
 
 ```sh
+# Flake (consigliato)
 nix build .#aymm          # build
 nix run  .#aymm           # esegui
-nix develop                   # shell di sviluppo con tutte le dipendenze
+nix develop               # shell di sviluppo con tutte le dipendenze
 nix build .#aymm-queen    # build con override Queen persona
+
+# shell.nix (no flake)
+nix-shell                 # legge shell.nix dalla root del progetto
 ```
 
 ## Configurazione
@@ -84,11 +92,12 @@ pomodoro_study_minutes=25
 pomodoro_break_minutes=5
 ```
 
-Gli sprite sheet sono opzionali. Per usarne uno, imposta `sprite_dir=` a una
-directory che contenga `sheet.conf` e il PNG corrispondente. Vedi
-[docs/sprite-format.md](docs/sprite-format.md) e
-[assets/sprites/neko/README.it.md](assets/sprites/neko/README.it.md) — incluse
-le note di licenza sul perché nessun PNG è incluso nel repo.
+Gli sprite sheet sono opzionali — il gatto procedurale è il default.
+Per sostituirlo con la tua arte, metti un PNG in
+`assets/sprites/default/` (accanto a `sheet.conf`) e imposta
+`sprite_dir=` nella config a quel path. Vedi
+[docs/sprite-format.it.md](docs/sprite-format.it.md) e
+[assets/sprites/default/README.it.md](assets/sprites/default/README.it.md).
 
 ## Autostart Hyprland
 
@@ -190,12 +199,9 @@ aggirare senza modifiche lato compositor.
 
 ## Limiti e non-obiettivi
 
-- **Niente sprite proprietari.** Gli asset Felix the Cat non sono inclusi e
-  non lo saranno mai. Vedi
-  [assets/sprites/neko/README.it.md](assets/sprites/neko/README.it.md).
 - **Niente logging dei tasti.** Il backend evdev whitelist-a solo
   `EV_REL`/`EV_ABS` — mai key code. Vedi
-  [docs/cursor-providers.md](docs/cursor-providers.md).
+  [docs/cursor-providers.it.md](docs/cursor-providers.it.md).
 
 ## Layout
 
@@ -223,7 +229,9 @@ src/
 
 ## Licenza
 
-MIT. Vedi [LICENSE](LICENSE).
+[CC BY-NC 4.0](LICENSE) — Creative Commons Attribution-NonCommercial
+4.0 International. Puoi usare, condividere e modificare per scopi non
+commerciali con attribuzione. Per uso commerciale contattare prima.
 
 L'XML di `wlr-layer-shell-unstable-v1` è vendorizzato sotto la stessa
 licenza permissiva tipo MIT dell'upstream wlr-protocols.

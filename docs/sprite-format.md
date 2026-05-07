@@ -1,5 +1,8 @@
 # Sprite sheet format
 
+> **Available languages**: [English (current)](sprite-format.md) | [Italiano](sprite-format.it.md)
+
+
 Every sprite pack is a directory containing:
 
 - `<image>.png` — sprite sheet PNG, RGBA preferred.
@@ -8,7 +11,7 @@ Every sprite pack is a directory containing:
 ## sheet.conf reference
 
 ```
-image=neko.png
+image=cat.png
 frame_w=32
 frame_h=32
 
