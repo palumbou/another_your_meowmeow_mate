@@ -158,16 +158,24 @@ cmake --build build -j
 
 ## 4. Matrice di compatibilità compositor
 
-| Compositor               | Layer-shell overlay | Cursor chase                       |
-|--------------------------|---------------------|------------------------------------|
-| Hyprland                 | ✅                   | ✅ via Hyprland IPC                 |
-| KDE Plasma 6 (KWin)      | ✅                   | ❌ libinput `EVIOCGRAB` esclusivo   |
-| sway / wlroots generico  | ✅                   | ⚠️ libinput grab, come KDE          |
-| GNOME Shell (Mutter)     | ❓ non testato       | ❌ no API pubblica per cursore      |
+| Compositor               | Layer-shell overlay     | Cursor chase                       |
+|--------------------------|-------------------------|------------------------------------|
+| Hyprland                 | ✅                       | ✅ via Hyprland IPC                 |
+| KDE Plasma 6 (KWin)      | ✅                       | ❌ libinput `EVIOCGRAB` esclusivo   |
+| sway / wlroots generico  | ✅                       | ⚠️ libinput grab, come KDE          |
+| GNOME Shell (Mutter)     | ❌ no wlr-layer-shell    | ❌ overlay non si apre              |
 
-Il **gatto viene disegnato** ovunque `wlr-layer-shell` è supportato.
+Il **gatto viene disegnato** ovunque `wlr-layer-shell` è supportato:
+Hyprland, sway, Wayfire, KDE Plasma 6 e la maggior parte dei
+compositor wlroots-based. **Mutter di GNOME NON espone
+`wlr-layer-shell`** — aymm fallisce il bind del global all'avvio e
+stampa `compositor missing required globals (compositor/shm/wlr-layer-shell)`.
+Su GNOME niente gatto finché Mutter non adotta il protocollo o aymm
+non aggiunge una fallback mode `xdg-toplevel` (non pianificata per v0.1.x).
+
 La chase loop richiede in più di leggere la posizione del cursore —
 funziona out-of-the-box su Hyprland, ed è bloccata su tutti gli altri
-compositor dal grab esclusivo di libinput. Su Fedora il consiglio
-pratico è installare Hyprland (`sudo dnf install hyprland`) per la
+compositor dal grab esclusivo di libinput. Su Fedora/Ubuntu il
+consiglio pratico è installare Hyprland
+(`sudo dnf install hyprland` / `sudo apt install hyprland`) per la
 chase loop.

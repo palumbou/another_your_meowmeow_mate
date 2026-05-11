@@ -196,6 +196,7 @@ The CLI talks to the daemon over an AF_UNIX socket at
 | Hyprland                  | ✅ works      | uses `hyprctl cursorpos` over the IPC socket — no permissions needed                                             |
 | KDE Plasma 6 / KWin       | ❌ no         | KWin uses libinput which `EVIOCGRAB`s the input devices exclusively, so aymm's evdev reads return zero events. The cat still **renders** in the basket; it just can't follow the mouse. There is no public KDE API for cursor position. |
 | sway / generic wlroots    | ⚠️ untested  | layer-shell renders fine; `evdev` works *if* the compositor's input backend doesn't grab exclusively (libinput does, so most wlroots compositors hit the same KDE issue). The Hyprland-style IPC is not exposed.                |
+| GNOME / Mutter            | ❌ no overlay | Mutter does **not** expose `wlr-layer-shell` — aymm exits at startup with `compositor missing required globals`. The cat never appears. Install a wlroots compositor (Hyprland, sway) to use aymm. |
 
 **Practical advice on Fedora**: install Hyprland (`sudo dnf install hyprland`)
 and log into a Hyprland session for the chase loop. KDE Plasma is supported
