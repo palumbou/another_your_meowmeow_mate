@@ -57,9 +57,12 @@ void SpeechBubble::draw(cairo_t* cr, double anchor_x, double anchor_y, TimePoint
     const double pad_x = 12.0, pad_y = 8.0;
     const double bw = te.width  + 2 * pad_x;
     const double bh = font_size + 2 * pad_y;
-    // Bubble sits up-and-to-the-right of the anchor, tail pointing back.
-    const double bx = anchor_x + 30.0;
-    const double by = anchor_y - bh - 24.0;
+    // Bubble sits clearly above the cat — high enough that its tail can end
+    // *outside* the cat's outline. The cat at scale 4 reaches roughly
+    // y = anchor_y - 40 at the ear tips, so the bubble bottom must be at
+    // y <= anchor_y - 45 and the tail tip must land at y <= anchor_y - 45.
+    const double bx = anchor_x + 32.0;
+    const double by = anchor_y - bh - 60.0;
 
     // Drop shadow
     cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.20 * alpha);
@@ -74,13 +77,17 @@ void SpeechBubble::draw(cairo_t* cr, double anchor_x, double anchor_y, TimePoint
     cairo_set_line_width(cr, 1.2);
     cairo_stroke(cr);
 
-    // Tail — small triangle from bubble bottom-left toward the anchor.
+    // Tail — small triangle from bubble bottom-left pointing toward the cat
+    // but stopping ABOVE the cat's outline (~y = anchor_y - 45 keeps it clear
+    // of the ears even when the cat is mid-run).
     const double tail_root_x = bx + 10.0;
     const double tail_root_y = by + bh;
+    const double tip_x = anchor_x + 28.0;
+    const double tip_y = anchor_y - 45.0;
     cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.96 * alpha);
     cairo_move_to(cr, tail_root_x,         tail_root_y - 0.5);
     cairo_line_to(cr, tail_root_x + 14.0,  tail_root_y - 0.5);
-    cairo_line_to(cr, anchor_x + 8.0,      anchor_y - 12.0);
+    cairo_line_to(cr, tip_x,               tip_y);
     cairo_close_path(cr);
     cairo_fill_preserve(cr);
     cairo_set_source_rgba(cr, 0.15, 0.15, 0.20, 0.85 * alpha);

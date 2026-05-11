@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -177,9 +178,9 @@ int App::run() {
     pet_.position.y = primary.y + primary.h / 2.0;
 
     // If Pomodoro auto-started in the constructor (--pomodoro flag or config
-    // auto-start), the phase-change handler ran before the overlay knew the
-    // screen rect. Now that we have it, place the cat in the focus corner.
-    if (pomodoro_.phase() == PomodoroPhase::Focus) move_to_focus_corner();
+    // auto-start), on_tick will see Focus phase and start walking the cat
+    // toward the configured corner. No teleport — the cat takes itself to
+    // the basket.
 
     // Hand the evdev provider its clamping rectangle and a sensible initial
     // cursor position. Hyprland provider doesn't need this (it reports
@@ -251,18 +252,31 @@ void App::on_tick() {
 
     // Pomodoro gate: any time a Pomodoro session is running, the cat behavior
     // is dictated by the phase. The config-level `enable_pomodoro` flag only
-    // affects whether the timer auto-starts; it does NOT gate the behavior
-    // — otherwise `aymm pomodoro start` from the CLI would be a no-op
-    // visually, which is the bug Ugo reported.
+    // affects whether the timer auto-starts; it does NOT gate the behavior.
     bool should_chase = (cfg_.behavior == Behavior::CursorChase);
     if (pomodoro_.phase() != PomodoroPhase::Stopped) {
         const auto active = (pomodoro_.phase() == PomodoroPhase::Paused)
                           ? pomodoro_.paused_phase() : pomodoro_.phase();
         if (active == PomodoroPhase::Focus) {
-            if (pet_.fsm.state() != PetState::Sleep) {
-                pet_.fsm.set_state(PetState::Sleep, now);
+            // Walk the cat toward the configured focus corner using the same
+            // mechanics as cursor chase. When close enough, settle into Sleep.
+            // No teleport — at the end of a Break the cat runs back to its
+            // basket on its own paws.
+            const Vec2 corner = focus_corner_position();
+            const double dx = corner.x - pet_.position.x;
+            const double dy = corner.y - pet_.position.y;
+            const double dist = std::sqrt(dx * dx + dy * dy);
+            if (dist <= pet_.idle_distance) {
+                if (pet_.fsm.state() != PetState::Sleep) {
+                    pet_.fsm.set_state(PetState::Sleep, now);
+                }
+                pet_.has_target = false;
+            } else {
+                pet_.target = corner;
+                pet_.has_target = true;
             }
-            should_chase = false;
+            pet_.step(now);
+            return;
         }
     }
 
@@ -274,33 +288,18 @@ void App::on_tick() {
     }
 }
 
-void App::move_to_focus_corner() {
+Vec2 App::focus_corner_position() const {
     const Rect r = overlay_.primary_output_rect();
-    if (r.w <= 0 || r.h <= 0) return;
+    if (r.w <= 0 || r.h <= 0) return { pet_.position.x, pet_.position.y };
     const int pad = std::max(40, cfg_.pomodoro_focus_padding);
     switch (cfg_.pomodoro_focus_corner) {
-        case FocusCorner::None: return;
-        case FocusCorner::Center:
-            pet_.position.x = r.x + r.w / 2.0;
-            pet_.position.y = r.y + r.h / 2.0;
-            break;
-        case FocusCorner::TopLeft:
-            pet_.position.x = r.x + pad;
-            pet_.position.y = r.y + pad;
-            break;
-        case FocusCorner::TopRight:
-            pet_.position.x = r.x + r.w - pad;
-            pet_.position.y = r.y + pad;
-            break;
-        case FocusCorner::BottomLeft:
-            pet_.position.x = r.x + pad;
-            pet_.position.y = r.y + r.h - pad;
-            break;
+        case FocusCorner::None:        return { pet_.position.x, pet_.position.y };
+        case FocusCorner::Center:      return { r.x + r.w / 2.0,       r.y + r.h / 2.0       };
+        case FocusCorner::TopLeft:     return { double(r.x + pad),     double(r.y + pad)     };
+        case FocusCorner::TopRight:    return { double(r.x + r.w - pad), double(r.y + pad)   };
+        case FocusCorner::BottomLeft:  return { double(r.x + pad),     double(r.y + r.h - pad) };
         case FocusCorner::BottomRight:
-        default:
-            pet_.position.x = r.x + r.w - pad;
-            pet_.position.y = r.y + r.h - pad;
-            break;
+        default:                       return { double(r.x + r.w - pad), double(r.y + r.h - pad) };
     }
 }
 
@@ -316,10 +315,9 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
         say(bubble);
     };
 
-    // Park the cat in the configured corner whenever a Focus session starts
-    // (or resumes). On exit from Focus we leave the cat where it is — the
-    // chase loop will pick it up from there during the break.
-    if (to == PomodoroPhase::Focus) move_to_focus_corner();
+    // Entering Focus does NOT teleport the cat anymore — on_tick walks it
+    // toward focus_corner_position() and only sets PetState::Sleep when it
+    // gets close enough. Phase-change handler just plays the announcement.
 
     switch (to) {
         case PomodoroPhase::Focus:
