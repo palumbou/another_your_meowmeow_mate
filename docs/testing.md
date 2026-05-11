@@ -164,10 +164,18 @@ cmake --build build -j
 | Hyprland                 | ✅                   | ✅ via Hyprland IPC                 |
 | KDE Plasma 6 (KWin)      | ✅                   | ❌ libinput `EVIOCGRAB` exclusivity |
 | sway / wlroots generic   | ✅                   | ⚠️ libinput grab, same as KDE       |
-| GNOME Shell (Mutter)     | ❓ untested          | ❌ no public cursor API             |
+| GNOME Shell (Mutter)     | ❌ no wlr-layer-shell | ❌ overlay never opens              |
 
-The **cat renders** anywhere `wlr-layer-shell` is supported. The chase
-loop additionally needs a way to read the cursor position — that works
-on Hyprland out of the box, and is blocked on every other compositor by
-libinput's exclusive grab. On Fedora the practical advice is to install
-Hyprland (`sudo dnf install hyprland`) for the chase to work.
+The **cat renders** anywhere `wlr-layer-shell` is supported, which means
+Hyprland, sway, Wayfire, KDE Plasma 6 and most wlroots-based
+compositors. **GNOME's Mutter does NOT expose `wlr-layer-shell`** — aymm
+fails to bind the global at startup and prints
+`compositor missing required globals (compositor/shm/wlr-layer-shell)`.
+No cat on GNOME until either Mutter adopts the protocol or aymm gains
+an `xdg-toplevel` fallback mode (not planned for v0.1.x).
+
+The chase loop additionally needs a way to read the cursor position —
+that works on Hyprland out of the box, and is blocked on every other
+compositor by libinput's exclusive grab. On Fedora/Ubuntu the practical
+advice is to install Hyprland (`sudo dnf install hyprland` /
+`sudo apt install hyprland`) for the chase to actually work.
