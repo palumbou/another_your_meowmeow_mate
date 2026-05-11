@@ -36,7 +36,7 @@ private:
     void on_tick();
     void draw(cairo_t* cr, int w, int h, int origin_x, int origin_y);
     void on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to);
-    void move_to_focus_corner();
+    Vec2 focus_corner_position() const;
     void say(std::string_view text,
              std::chrono::milliseconds duration = std::chrono::milliseconds(4500));
 
