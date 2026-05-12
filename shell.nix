@@ -24,6 +24,7 @@ pkgs.mkShell {
     wayland-protocols
     wayland-scanner
     cairo
+    pango
     gcc
     gdb
     valgrind

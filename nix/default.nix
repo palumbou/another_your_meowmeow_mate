@@ -6,17 +6,18 @@
 , wayland-protocols
 , wayland-scanner
 , cairo
+, pango
 , queenMode ? false
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "aymm";
-  version = "0.1.0";
+  version = "0.1.3";
 
   src = lib.cleanSource ../.;
 
   nativeBuildInputs = [ cmake pkg-config wayland-scanner ];
-  buildInputs = [ wayland wayland-protocols cairo ];
+  buildInputs = [ wayland wayland-protocols cairo pango ];
 
   cmakeFlags = lib.optional queenMode "-DAYMM_QUEEN_MODE=ON";
 

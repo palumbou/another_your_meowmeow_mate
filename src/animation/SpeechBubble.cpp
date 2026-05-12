@@ -1,7 +1,9 @@
 #include "aymm/SpeechBubble.hpp"
 
+#include <algorithm>
 #include <cairo/cairo.h>
 #include <cmath>
+#include <pango/pangocairo.h>
 
 namespace aymm {
 
@@ -37,7 +39,6 @@ void SpeechBubble::draw(cairo_t* cr, double anchor_x, double anchor_y, TimePoint
     if (!active(now)) return;
 
     // Fade-in (first 200 ms) and fade-out (last 400 ms) for a softer feel.
-    const auto life       = expires_at_ - shown_at_;
     const auto since_show = now - shown_at_;
     const auto until_end  = expires_at_ - now;
     double alpha = 1.0;
@@ -46,20 +47,25 @@ void SpeechBubble::draw(cairo_t* cr, double anchor_x, double anchor_y, TimePoint
     } else if (until_end < std::chrono::milliseconds(400)) {
         alpha = std::max(0.0, std::chrono::duration<double>(until_end).count() / 0.4);
     }
-    (void)life;
 
     cairo_save(cr);
 
-    // Measure the text first so we can size the bubble.
-    cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-    const double font_size = 14.0;
-    cairo_set_font_size(cr, font_size);
-    cairo_text_extents_t te;
-    cairo_text_extents(cr, text_.c_str(), &te);
+    // Build a Pango layout so emojis get fontconfig-based fallback to a
+    // color emoji font (Noto Color Emoji on most systems). Cairo's toy
+    // text API doesn't do that — strings like "Focus time, Queen 🐾"
+    // would render the paw as a tofu rectangle without Pango.
+    PangoLayout* layout = pango_cairo_create_layout(cr);
+    pango_layout_set_text(layout, text_.c_str(), -1);
+    PangoFontDescription* desc = pango_font_description_from_string("Sans 11");
+    pango_layout_set_font_description(layout, desc);
+    pango_font_description_free(desc);
 
-    const double pad_x = 12.0, pad_y = 8.0;
-    const double bw = te.width  + 2 * pad_x;
-    const double bh = font_size + 2 * pad_y;
+    int text_w = 0, text_h = 0;
+    pango_layout_get_pixel_size(layout, &text_w, &text_h);
+
+    const double pad_x = 12.0, pad_y = 7.0;
+    const double bw = text_w + 2 * pad_x;
+    const double bh = text_h + 2 * pad_y;
 
     // Position depends on style:
     //   Speech — bubble up-and-to-the-right, with a tail pointing at the cat
@@ -106,11 +112,12 @@ void SpeechBubble::draw(cairo_t* cr, double anchor_x, double anchor_y, TimePoint
         cairo_stroke(cr);
     }
 
-    // Text
+    // Text via Pango — handles emoji fallback automatically.
     cairo_set_source_rgba(cr, 0.10, 0.10, 0.15, alpha);
-    cairo_move_to(cr, bx + pad_x - te.x_bearing, by + pad_y - te.y_bearing);
-    cairo_show_text(cr, text_.c_str());
+    cairo_move_to(cr, bx + pad_x, by + pad_y);
+    pango_cairo_show_layout(cr, layout);
 
+    g_object_unref(layout);
     cairo_restore(cr);
 }
 

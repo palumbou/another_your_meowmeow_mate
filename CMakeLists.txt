@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(aymm
-    VERSION 0.1.2
+    VERSION 0.1.3
     DESCRIPTION "Wayland-native desktop pet that chases your cursor under Hyprland"
     LANGUAGES C CXX)
 
@@ -23,6 +23,10 @@ pkg_check_modules(WAYLAND_CLIENT REQUIRED IMPORTED_TARGET wayland-client)
 pkg_check_modules(WAYLAND_PROTOCOLS REQUIRED wayland-protocols>=1.31)
 pkg_get_variable(WAYLAND_PROTOCOLS_DATADIR wayland-protocols pkgdatadir)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
+# Pango-cairo gives us proper font fallback + shaping, so emojis in the
+# speech bubble render through Noto Color Emoji (or whatever fontconfig
+# falls back to) instead of becoming tofu rectangles.
+pkg_check_modules(PANGOCAIRO REQUIRED IMPORTED_TARGET pangocairo)
 
 # Vendored layer-shell protocol (from wlr-protocols, MIT-like)
 set(LAYER_SHELL_XML "${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml")
@@ -66,6 +70,7 @@ target_link_libraries(aymm_core
     PUBLIC
         PkgConfig::WAYLAND_CLIENT
         PkgConfig::CAIRO
+        PkgConfig::PANGOCAIRO
         rt
 )
 

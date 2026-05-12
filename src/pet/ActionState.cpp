@@ -5,30 +5,55 @@
 namespace aymm {
 
 namespace {
-constexpr auto kDuration   = std::chrono::milliseconds(3500);
-constexpr auto kCycleReset = std::chrono::seconds(10);
+constexpr auto kDuration = std::chrono::milliseconds(4000);
 constexpr double kPi = 3.14159265358979323846;
 } // namespace
 
-void ActionState::trigger_next(TimePoint now, double cat_x, double cat_y) {
-    // Reset the cycle if it's been a while since the last click. Avoids
-    // landing on a weird state after the user comes back to the cat.
-    if (now - last_click_ > kCycleReset) next_index_ = 0;
-    last_click_ = now;
+void ActionState::trigger_next(TimePoint now, double cat_x, double cat_y,
+                               bool cat_facing_east) {
+    // Pick a random effect, but never the same as the last played one so
+    // you don't see the same animation twice in a row.
+    static const Effect kPool[4] = {
+        Effect::Ball, Effect::Food, Effect::Purr, Effect::Scratch
+    };
+    std::uniform_int_distribution<int> pick(0, 3);
+    Effect chosen = last_played_;
+    while (chosen == last_played_) chosen = kPool[pick(rng_)];
 
-    static const Effect kSequence[3] = { Effect::Ball, Effect::Food, Effect::Purr };
-    current_    = kSequence[next_index_ % 3];
-    next_index_ = (next_index_ + 1) % 3;
-    started_at_ = now;
+    current_     = chosen;
+    last_played_ = chosen;
+    started_at_  = now;
 
-    if (current_ == Effect::Ball) {
-        // Toss the ball in a random direction, ~120-180 px from the cat.
-        std::uniform_real_distribution<double> ang(0, 2 * kPi);
-        std::uniform_real_distribution<double> rad(120, 180);
-        const double a = ang(rng_);
-        const double r = rad(rng_);
-        ball_x = cat_x + std::cos(a) * r;
-        ball_y = cat_y + std::sin(a) * r;
+    // Position the action prop relative to the cat. Bowl and post go in
+    // FRONT of the cat (which side that is depends on facing direction).
+    const double dx_front = cat_facing_east ? 38.0 : -38.0;
+    switch (current_) {
+        case Effect::Ball: {
+            // Toss the yarn ball in a random direction, 130-180 px away.
+            std::uniform_real_distribution<double> ang(0, 2 * kPi);
+            std::uniform_real_distribution<double> rad(130, 180);
+            const double a = ang(rng_);
+            const double r = rad(rng_);
+            prop_x = cat_x + std::cos(a) * r;
+            prop_y = cat_y + std::sin(a) * r;
+            break;
+        }
+        case Effect::Food:
+            // Bowl in front of the cat, slightly below the body line so the
+            // cat 'leans in' to eat.
+            prop_x = cat_x + dx_front;
+            prop_y = cat_y + 18.0;
+            break;
+        case Effect::Scratch:
+            // Scratching post stands in front of the cat.
+            prop_x = cat_x + dx_front;
+            prop_y = cat_y;
+            break;
+        case Effect::Purr:
+        default:
+            prop_x = cat_x;
+            prop_y = cat_y;
+            break;
     }
 }
 
