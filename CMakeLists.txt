@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(aymm
-    VERSION 0.1.3
+    VERSION 0.1.4
     DESCRIPTION "Wayland-native desktop pet that chases your cursor under Hyprland"
     LANGUAGES C CXX)
 
