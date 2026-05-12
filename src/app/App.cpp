@@ -205,8 +205,11 @@ int App::run() {
         const double dx = gx - pet_.position.x;
         const double dy = gy - pet_.position.y;
         if (dx * dx + dy * dy > 100.0 * 100.0) return;
+        const Direction d = pet_.fsm.direction();
+        const bool facing_east = (d == Direction::None)
+                              || (d == Direction::E) || (d == Direction::NE) || (d == Direction::SE);
         action_.trigger_next(ActionState::Clock::now(),
-                             pet_.position.x, pet_.position.y);
+                             pet_.position.x, pet_.position.y, facing_east);
     });
 
     if (control_.bind_listen() < 0) {
@@ -279,15 +282,28 @@ void App::on_tick() {
     // Active right-click action takes precedence over chase / pomodoro.
     if (action_.active()) {
         switch (action_.current()) {
-            case ActionState::Effect::Ball:
-                // Chase the ball — same mechanics as the cursor chase.
-                pet_.target.x = action_.ball_x;
-                pet_.target.y = action_.ball_y;
-                pet_.has_target = true;
+            case ActionState::Effect::Ball: {
+                // Chase the yarn ball but stop ~40 px short so the ball
+                // doesn't end up under the cat's belly.
+                const double dx = action_.prop_x - pet_.position.x;
+                const double dy = action_.prop_y - pet_.position.y;
+                const double dist = std::sqrt(dx * dx + dy * dy);
+                if (dist <= 40.0) {
+                    pet_.has_target = false;
+                    if (pet_.fsm.state() == PetState::Run) {
+                        pet_.fsm.set_state(PetState::Idle, now);
+                    }
+                } else {
+                    pet_.target.x = action_.prop_x;
+                    pet_.target.y = action_.prop_y;
+                    pet_.has_target = true;
+                }
                 pet_.step(now);
                 return;
+            }
             case ActionState::Effect::Food:
             case ActionState::Effect::Purr:
+            case ActionState::Effect::Scratch:
                 // Stay put; rendered visuals go on top in draw().
                 pet_.has_target = false;
                 if (pet_.fsm.state() != PetState::Idle) {
@@ -356,14 +372,11 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
     const auto& persona = UserPersona::active();
     const std::string honor { persona.honorific() };
 
-    // For notifications we prefix the body with a cat emoji so it's clear
-    // the message is from aymm. Notification daemons render emoji well
-    // (they use the system font stack with proper shaping).
-    //
-    // For on-screen speech bubbles we deliberately keep ASCII text only —
-    // Cairo's toy text API doesn't do Pango-style font fallback, so emojis
-    // turn into tofu rectangles in the bubble. The bubble carries the
-    // mood; the system notification carries the cat icon.
+    // Notifications and bubbles can both carry emoji now: the bubble goes
+    // through Pango, the notification daemon uses the system font stack
+    // — both end up at Noto Color Emoji or whatever's installed. The
+    // notification body is prefixed with 🐈 so the popup reads obviously
+    // as coming from aymm.
     auto announce = [&](std::string_view body, std::string_view bubble,
                         std::string_view urgency,
                         SpeechBubble::Style style = SpeechBubble::Style::Speech) {
@@ -384,24 +397,24 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
         case PomodoroPhase::Focus:
             if (from == PomodoroPhase::Stopped) {
                 announce("Focus session started" + honor + ".",
-                         "Focus time" + honor,
+                         "💤 Focus time" + honor,
                          "low",
                          SpeechBubble::Style::Status);
             } else {
                 announce("Back to focus" + honor + ". You've got this.",
-                         "Back to focus" + honor,
+                         "💤 Back to focus" + honor,
                          "low",
                          SpeechBubble::Style::Status);
             }
             break;
         case PomodoroPhase::Break:
             announce("Your break awaits" + honor + ".",
-                     "Break time" + honor + "!",
+                     "Break time" + honor + " 🐾",
                      "normal");
             break;
         case PomodoroPhase::LongBreak:
-            announce("Long break time" + honor + " - go stretch.",
-                     "Long break" + honor + " - stretch!",
+            announce("Long break time" + honor + " — go stretch.",
+                     "Long break" + honor + " 🐾",
                      "normal");
             break;
         default: break;
@@ -505,60 +518,175 @@ void App::draw_action(cairo_t* cr) {
     cairo_save(cr);
     switch (action_.current()) {
         case ActionState::Effect::Ball: {
-            // Red ball at its position, with a small drop shadow.
+            // Yarn ball — cream-colored sphere with thin lines wrapping
+            // around it to suggest a wound thread.
+            const double bx = action_.prop_x;
+            const double by = action_.prop_y;
+            // Drop shadow
             cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
             cairo_save(cr);
-            cairo_translate(cr, action_.ball_x, action_.ball_y + 8);
-            cairo_scale(cr, 1.0, 0.4);
-            cairo_arc(cr, 0, 0, 10, 0, 2 * kPi);
+            cairo_translate(cr, bx, by + 11);
+            cairo_scale(cr, 1.0, 0.35);
+            cairo_arc(cr, 0, 0, 12, 0, 2 * kPi);
             cairo_restore(cr);
             cairo_fill(cr);
-
-            cairo_set_source_rgba(cr, 0.85, 0.18, 0.18, 1.0);
-            cairo_arc(cr, action_.ball_x, action_.ball_y, 10, 0, 2 * kPi);
+            // Yarn body
+            cairo_set_source_rgba(cr, 0.96, 0.85, 0.62, 1.0);
+            cairo_arc(cr, bx, by, 12, 0, 2 * kPi);
             cairo_fill_preserve(cr);
-            cairo_set_source_rgba(cr, 0.40, 0.08, 0.08, 0.85);
+            cairo_set_source_rgba(cr, 0.55, 0.40, 0.20, 0.85);
             cairo_set_line_width(cr, 0.8);
             cairo_stroke(cr);
-            // Tiny shine
-            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.7);
-            cairo_arc(cr, action_.ball_x - 3, action_.ball_y - 3, 2.5, 0, 2 * kPi);
-            cairo_fill(cr);
+            // Wrapping threads — a few curved strokes across the ball.
+            cairo_set_source_rgba(cr, 0.70, 0.50, 0.25, 0.85);
+            cairo_set_line_width(cr, 0.7);
+            // Clip strokes to ball circle.
+            cairo_save(cr);
+            cairo_arc(cr, bx, by, 11.5, 0, 2 * kPi);
+            cairo_clip(cr);
+            for (int i = -2; i <= 2; ++i) {
+                cairo_save(cr);
+                cairo_translate(cr, bx, by);
+                cairo_rotate(cr, i * 0.45);
+                cairo_move_to(cr, -14, -3 + i * 1.2);
+                cairo_curve_to(cr, -4, 0 + i, 4, 1 + i, 14, -3 + i * 1.2);
+                cairo_stroke(cr);
+                cairo_restore(cr);
+            }
+            for (int i = -2; i <= 2; ++i) {
+                cairo_save(cr);
+                cairo_translate(cr, bx, by);
+                cairo_rotate(cr, kPi / 2 + i * 0.45);
+                cairo_move_to(cr, -14, -3 + i * 1.2);
+                cairo_curve_to(cr, -4, 0 + i, 4, 1 + i, 14, -3 + i * 1.2);
+                cairo_stroke(cr);
+                cairo_restore(cr);
+            }
+            cairo_restore(cr);
+            // Tiny loose end coming off the ball.
+            cairo_set_source_rgba(cr, 0.70, 0.50, 0.25, 0.95);
+            cairo_set_line_width(cr, 1.1);
+            cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+            cairo_move_to(cr, bx + 11, by - 6);
+            cairo_curve_to(cr, bx + 17, by - 10, bx + 19, by - 4, bx + 16, by + 1);
+            cairo_stroke(cr);
             break;
         }
         case ActionState::Effect::Food: {
-            // Brown bowl ellipse just below the cat with chunks of food.
-            const double bx = pet_.position.x;
-            const double by = pet_.position.y + 30;
+            // Brown bowl positioned in front of the cat, heaped with food.
+            const double bx = action_.prop_x;
+            const double by = action_.prop_y;
+            // Drop shadow
             cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
             cairo_save(cr);
-            cairo_translate(cr, bx, by + 4);
+            cairo_translate(cr, bx, by + 6);
             cairo_scale(cr, 1.0, 0.35);
-            cairo_arc(cr, 0, 0, 22, 0, 2 * kPi);
+            cairo_arc(cr, 0, 0, 24, 0, 2 * kPi);
             cairo_restore(cr);
             cairo_fill(cr);
-            // Bowl
-            cairo_set_source_rgba(cr, 0.55, 0.35, 0.18, 1.0);
+            // Bowl back rim (top of bowl, behind food)
+            cairo_set_source_rgba(cr, 0.42, 0.26, 0.12, 1.0);
+            cairo_save(cr);
+            cairo_translate(cr, bx, by - 3);
+            cairo_scale(cr, 1.0, 0.4);
+            cairo_arc(cr, 0, 0, 22, kPi, 2 * kPi);
+            cairo_restore(cr);
+            cairo_fill(cr);
+            // Heaped food: a dome of chunks above the bowl rim.
+            const double food_colors[3][3] = {
+                { 0.78, 0.50, 0.22 },
+                { 0.85, 0.58, 0.28 },
+                { 0.62, 0.36, 0.16 },
+            };
+            // Sketch a mound of food using overlapping circles.
+            const struct { double dx, dy, r; int c; } chunks[] = {
+                {  -14,  -3, 3.0, 0 }, {  -9,  -5, 3.2, 1 }, {  -4,  -6, 3.0, 2 },
+                {    1,  -7, 3.4, 0 }, {   6,  -6, 3.1, 1 }, {  10,  -4, 3.0, 2 },
+                {   14,  -3, 2.8, 0 }, {  -11,   0, 3.1, 2 }, {  -5,  -2, 3.0, 1 },
+                {    0,  -3, 3.0, 0 }, {   5,  -2, 2.9, 2 }, {  11,   0, 3.0, 1 },
+            };
+            for (auto& c : chunks) {
+                cairo_set_source_rgba(cr, food_colors[c.c][0], food_colors[c.c][1],
+                                      food_colors[c.c][2], 1.0);
+                cairo_arc(cr, bx + c.dx, by + c.dy, c.r, 0, 2 * kPi);
+                cairo_fill(cr);
+            }
+            // Bowl front rim (in front of food, with rim shine)
+            cairo_pattern_t* g = cairo_pattern_create_linear(0, by, 0, by + 10);
+            cairo_pattern_add_color_stop_rgb(g, 0.0, 0.72, 0.48, 0.20);
+            cairo_pattern_add_color_stop_rgb(g, 1.0, 0.40, 0.24, 0.10);
             cairo_save(cr);
             cairo_translate(cr, bx, by);
             cairo_scale(cr, 1.0, 0.55);
-            cairo_arc(cr, 0, 0, 20, 0, kPi);
+            cairo_arc(cr, 0, 0, 22, 0, kPi);
             cairo_restore(cr);
+            cairo_set_source(cr, g);
             cairo_fill_preserve(cr);
-            cairo_set_source_rgba(cr, 0.30, 0.18, 0.08, 0.9);
+            cairo_pattern_destroy(g);
+            cairo_set_source_rgba(cr, 0.28, 0.18, 0.08, 0.9);
             cairo_set_line_width(cr, 0.8);
             cairo_stroke(cr);
-            // Food chunks (rust-colored circles)
-            cairo_set_source_rgba(cr, 0.75, 0.45, 0.20, 1.0);
-            for (int i = -2; i <= 2; ++i) {
-                cairo_arc(cr, bx + i * 5.5, by + 1, 2.2, 0, 2 * kPi);
-                cairo_fill(cr);
+            // Rim highlight on the front lip
+            cairo_set_source_rgba(cr, 0.95, 0.85, 0.65, 0.5);
+            cairo_set_line_width(cr, 0.5);
+            cairo_save(cr);
+            cairo_translate(cr, bx, by);
+            cairo_scale(cr, 1.0, 0.55);
+            cairo_arc(cr, 0, 0, 21, 0.2, kPi - 0.2);
+            cairo_restore(cr);
+            cairo_stroke(cr);
+            break;
+        }
+        case ActionState::Effect::Scratch: {
+            // Wooden scratching post with sisal-rope wrap. Vertical column
+            // standing on a square base, set in front of the cat.
+            const double px = action_.prop_x;
+            const double py = action_.prop_y;
+            // Base (rectangular)
+            cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
+            cairo_rectangle(cr, px - 14, py + 26, 28, 4);
+            cairo_fill(cr);
+            cairo_set_source_rgba(cr, 0.45, 0.28, 0.15, 1.0);
+            cairo_rectangle(cr, px - 14, py + 20, 28, 8);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgba(cr, 0.25, 0.15, 0.06, 0.9);
+            cairo_set_line_width(cr, 0.8);
+            cairo_stroke(cr);
+            // Post column wrapped in sisal — beige cylinder with horizontal
+            // stripes for the rope coils.
+            const double post_top = py - 35;
+            const double post_bot = py + 20;
+            const double post_w = 12;
+            cairo_set_source_rgba(cr, 0.85, 0.68, 0.40, 1.0);
+            cairo_rectangle(cr, px - post_w / 2, post_top, post_w, post_bot - post_top);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgba(cr, 0.55, 0.40, 0.20, 0.9);
+            cairo_set_line_width(cr, 0.8);
+            cairo_stroke(cr);
+            // Horizontal rope coils across the post.
+            cairo_set_source_rgba(cr, 0.55, 0.40, 0.20, 0.7);
+            cairo_set_line_width(cr, 0.55);
+            for (double y = post_top + 2; y < post_bot - 1; y += 3) {
+                cairo_move_to(cr, px - post_w / 2 + 0.5, y);
+                cairo_line_to(cr, px + post_w / 2 - 0.5, y);
+                cairo_stroke(cr);
             }
-            cairo_set_source_rgba(cr, 0.62, 0.36, 0.16, 1.0);
-            for (int i = -1; i <= 1; ++i) {
-                cairo_arc(cr, bx + i * 5.0, by + 5, 1.8, 0, 2 * kPi);
-                cairo_fill(cr);
-            }
+            // Top cap — small flat disc.
+            cairo_set_source_rgba(cr, 0.55, 0.35, 0.18, 1.0);
+            cairo_save(cr);
+            cairo_translate(cr, px, post_top);
+            cairo_scale(cr, 1.0, 0.3);
+            cairo_arc(cr, 0, 0, post_w / 2 + 2, 0, 2 * kPi);
+            cairo_restore(cr);
+            cairo_fill(cr);
+            // Tiny claw marks on the post (animate position with progress).
+            const double mark_y = post_top + 10 + p * 30.0;
+            cairo_set_source_rgba(cr, 0.40, 0.25, 0.10, 0.9);
+            cairo_set_line_width(cr, 0.7);
+            cairo_move_to(cr, px - 4, mark_y);     cairo_line_to(cr, px - 1, mark_y + 6);
+            cairo_move_to(cr, px,     mark_y - 1); cairo_line_to(cr, px + 3, mark_y + 5);
+            cairo_move_to(cr, px + 4, mark_y);     cairo_line_to(cr, px + 7, mark_y + 6);
+            cairo_stroke(cr);
             break;
         }
         case ActionState::Effect::Purr: {
