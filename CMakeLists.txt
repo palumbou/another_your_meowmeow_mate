@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(aymm
-    VERSION 0.1.1
+    VERSION 0.1.2
     DESCRIPTION "Wayland-native desktop pet that chases your cursor under Hyprland"
     LANGUAGES C CXX)
 
@@ -43,6 +43,7 @@ add_library(aymm_core STATIC
     src/pet/PetStateMachine.cpp
     src/pet/CursorChaseBehavior.cpp
     src/pet/PomodoroBehavior.cpp
+    src/pet/ActionState.cpp
     src/animation/SpriteSheet.cpp
     src/animation/Animation.cpp
     src/animation/ProceduralCat.cpp
