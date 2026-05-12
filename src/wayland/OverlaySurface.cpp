@@ -71,6 +71,15 @@ struct OverlaySurface::OutputSurface {
     uint8_t*   mapped      = nullptr;
     size_t     mapped_size = 0;
     wl_buffer* buffer      = nullptr;
+
+    // Pointer state: which surface currently has the pointer, and its local
+    // position within that surface (in compositor pixels relative to origin).
+    bool   pointer_inside = false;
+    double pointer_x = 0;
+    double pointer_y = 0;
+
+    // Last input region we committed, so we can skip redundant updates.
+    int last_region_x = -1, last_region_y = -1, last_region_size = -1;
 };
 
 struct OverlaySurface::Impl {
@@ -78,10 +87,15 @@ struct OverlaySurface::Impl {
     wl_compositor*           compositor  = nullptr;
     wl_shm*                  shm         = nullptr;
     zwlr_layer_shell_v1*     layer_shell = nullptr;
+    wl_seat*                 seat        = nullptr;
+    wl_pointer*              pointer     = nullptr;
 
     std::vector<std::unique_ptr<OutputSurface>> outputs;
     OverlayLayer  layer = OverlayLayer::Overlay;
     std::string   monitor_request = "auto";
+
+    // Pointer focus: which OutputSurface the pointer entered last.
+    OutputSurface* pointer_focus = nullptr;
 
     OverlaySurface* parent = nullptr;
 };
@@ -230,6 +244,82 @@ void layer_closed(void* data, zwlr_layer_surface_v1*) {
 
 const zwlr_layer_surface_v1_listener kLayerListener = { layer_configure, layer_closed };
 
+// ---- wl_pointer listener ----------------------------------------------------
+
+OverlaySurface::OutputSurface* find_output_by_surface(OverlaySurface::Impl* impl, wl_surface* s) {
+    for (auto& o : impl->outputs) if (o->surface == s) return o.get();
+    return nullptr;
+}
+
+void pointer_enter(void* data, wl_pointer*, uint32_t /*serial*/,
+                   wl_surface* surface, wl_fixed_t sx, wl_fixed_t sy) {
+    auto* impl = static_cast<OverlaySurface::Impl*>(data);
+    auto* o = find_output_by_surface(impl, surface);
+    if (!o) return;
+    o->pointer_inside = true;
+    o->pointer_x = wl_fixed_to_double(sx);
+    o->pointer_y = wl_fixed_to_double(sy);
+    impl->pointer_focus = o;
+}
+
+void pointer_leave(void* data, wl_pointer*, uint32_t /*serial*/, wl_surface* surface) {
+    auto* impl = static_cast<OverlaySurface::Impl*>(data);
+    auto* o = find_output_by_surface(impl, surface);
+    if (o) o->pointer_inside = false;
+    if (impl->pointer_focus == o) impl->pointer_focus = nullptr;
+}
+
+void pointer_motion(void* data, wl_pointer*, uint32_t /*time*/,
+                    wl_fixed_t sx, wl_fixed_t sy) {
+    auto* impl = static_cast<OverlaySurface::Impl*>(data);
+    if (!impl->pointer_focus) return;
+    impl->pointer_focus->pointer_x = wl_fixed_to_double(sx);
+    impl->pointer_focus->pointer_y = wl_fixed_to_double(sy);
+}
+
+void pointer_button(void* data, wl_pointer*, uint32_t /*serial*/, uint32_t /*time*/,
+                    uint32_t button, uint32_t state) {
+    if (state != WL_POINTER_BUTTON_STATE_PRESSED) return;
+    auto* impl = static_cast<OverlaySurface::Impl*>(data);
+    auto* o = impl->pointer_focus;
+    if (!o || !impl->parent) return;
+    const auto& cb = impl->parent->button_callback();
+    if (!cb) return;
+    const double gx = o->origin_x + o->pointer_x;
+    const double gy = o->origin_y + o->pointer_y;
+    cb(button, gx, gy);
+}
+
+void pointer_axis(void*, wl_pointer*, uint32_t, uint32_t, wl_fixed_t) {}
+void pointer_frame(void*, wl_pointer*) {}
+void pointer_axis_source(void*, wl_pointer*, uint32_t) {}
+void pointer_axis_stop(void*, wl_pointer*, uint32_t, uint32_t) {}
+void pointer_axis_discrete(void*, wl_pointer*, uint32_t, int32_t) {}
+void pointer_axis_value120(void*, wl_pointer*, uint32_t, int32_t) {}
+void pointer_axis_relative_direction(void*, wl_pointer*, uint32_t, uint32_t) {}
+
+const wl_pointer_listener kPointerListener = {
+    pointer_enter, pointer_leave, pointer_motion, pointer_button,
+    pointer_axis, pointer_frame, pointer_axis_source, pointer_axis_stop,
+    pointer_axis_discrete, pointer_axis_value120, pointer_axis_relative_direction,
+};
+
+void seat_capabilities(void* data, wl_seat* seat, uint32_t caps) {
+    auto* impl = static_cast<OverlaySurface::Impl*>(data);
+    const bool has_pointer = caps & WL_SEAT_CAPABILITY_POINTER;
+    if (has_pointer && !impl->pointer) {
+        impl->pointer = wl_seat_get_pointer(seat);
+        wl_pointer_add_listener(impl->pointer, &kPointerListener, impl);
+    } else if (!has_pointer && impl->pointer) {
+        wl_pointer_release(impl->pointer);
+        impl->pointer = nullptr;
+    }
+}
+
+void seat_name(void*, wl_seat*, const char*) {}
+
+const wl_seat_listener kSeatListener = { seat_capabilities, seat_name };
+
 void build_surface_for(OverlaySurface::OutputSurface* o, OverlaySurface::Impl* impl) {
     if (o->surface_built) return;
     if (!o->geom_done) return;
@@ -280,6 +370,10 @@ void registry_global(void* data, wl_registry* reg, uint32_t name,
             wl_registry_bind(reg, name, &wl_output_interface, std::min<uint32_t>(version, 4)));
         wl_output_add_listener(o->output, &kOutputListener, o.get());
         p->outputs.push_back(std::move(o));
+    } else if (std::strcmp(interface, wl_seat_interface.name) == 0) {
+        p->seat = static_cast<wl_seat*>(
+            wl_registry_bind(reg, name, &wl_seat_interface, std::min<uint32_t>(version, 7)));
+        wl_seat_add_listener(p->seat, &kSeatListener, p);
     }
 }
 void registry_global_remove(void*, wl_registry*, uint32_t) {}
@@ -301,7 +395,45 @@ OverlaySurface::~OverlaySurface() {
         if (o->mapped)        ::munmap(o->mapped, o->mapped_size);
         if (o->shm_fd >= 0)   ::close(o->shm_fd);
     }
+    if (impl_->pointer) wl_pointer_release(impl_->pointer);
+    if (impl_->seat)    wl_seat_release(impl_->seat);
     if (impl_->display) wl_display_disconnect(impl_->display);
+}
+
+void OverlaySurface::set_cat_region(int gx, int gy, int size_px) {
+    if (!impl_->compositor) return;
+    const int half = size_px / 2;
+    for (auto& o : impl_->outputs) {
+        if (!o->configured || !o->surface) continue;
+
+        // Cat center in this output's local coords.
+        const int lx = gx - o->origin_x;
+        const int ly = gy - o->origin_y;
+        const bool on_output =
+            lx + half >= 0 && lx - half < o->width &&
+            ly + half >= 0 && ly - half < o->height;
+
+        int rx = -1, ry = -1, rs = -1;
+        if (on_output) {
+            rx = std::max(0, lx - half);
+            ry = std::max(0, ly - half);
+            rs = size_px;
+        }
+        // Skip if region unchanged.
+        if (rx == o->last_region_x && ry == o->last_region_y && rs == o->last_region_size) {
+            continue;
+        }
+        o->last_region_x = rx;
+        o->last_region_y = ry;
+        o->last_region_size = rs;
+
+        wl_region* region = wl_compositor_create_region(impl_->compositor);
+        if (on_output) wl_region_add(region, rx, ry, rs, rs);
+        wl_surface_set_input_region(o->surface, region);
+        wl_region_destroy(region);
+        // The surface commit happens during the next render — no need to
+        // force one here.
+    }
 }
 
 bool OverlaySurface::connect(const Config& cfg, std::string& err) {

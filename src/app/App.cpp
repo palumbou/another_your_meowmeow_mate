@@ -153,15 +153,16 @@ App::App(Config cfg, AppOptions opts)
         // decides whether ", Queen" is appended.
         const auto& persona = UserPersona::active();
         const std::string greet = std::string(persona.greeting()) + "!";
-        notifier_.notify("aymm", greet, "low");
+        notifier_.notify("aymm", "🐈 " + greet, "low");
         say(greet);
     }
 
     last_pomodoro_phase_ = pomodoro_.phase();
 }
 
-void App::say(std::string_view text, std::chrono::milliseconds duration) {
-    bubble_.say(text, duration);
+void App::say(std::string_view text, std::chrono::milliseconds duration,
+              SpeechBubble::Style style) {
+    bubble_.say(text, duration, style);
 }
 
 int App::run() {
@@ -193,6 +194,19 @@ int App::run() {
 
     overlay_.set_draw([this](cairo_t* cr, int w, int h, int ox, int oy){
         draw(cr, w, h, ox, oy);
+    });
+
+    // BTN_RIGHT = 0x111 — right-click on the cat cycles Ball/Food/Purr.
+    // BTN_LEFT and BTN_MIDDLE are ignored for now.
+    overlay_.set_button_callback([this](uint32_t button, double gx, double gy){
+        if (button != 0x111) return;
+        // Sanity-check that the click is reasonably close to the cat (the
+        // input region is also throttled, so this is a belt-and-suspenders).
+        const double dx = gx - pet_.position.x;
+        const double dy = gy - pet_.position.y;
+        if (dx * dx + dy * dy > 100.0 * 100.0) return;
+        action_.trigger_next(ActionState::Clock::now(),
+                             pet_.position.x, pet_.position.y);
     });
 
     if (control_.bind_listen() < 0) {
@@ -249,6 +263,41 @@ void App::on_tick() {
         last_pomodoro_phase_ = pomodoro_.phase();
     }
     pomodoro_behavior_.apply();
+    action_.update(now);
+
+    // Update the input region around the cat so right-clicks on it land in
+    // our surface. Throttle: only push to the compositor when the cat has
+    // moved more than 10 px since the last update.
+    const int cgx = static_cast<int>(pet_.position.x);
+    const int cgy = static_cast<int>(pet_.position.y);
+    if (std::abs(cgx - last_region_gx_) > 10 || std::abs(cgy - last_region_gy_) > 10) {
+        overlay_.set_cat_region(cgx, cgy, 110);
+        last_region_gx_ = cgx;
+        last_region_gy_ = cgy;
+    }
+
+    // Active right-click action takes precedence over chase / pomodoro.
+    if (action_.active()) {
+        switch (action_.current()) {
+            case ActionState::Effect::Ball:
+                // Chase the ball — same mechanics as the cursor chase.
+                pet_.target.x = action_.ball_x;
+                pet_.target.y = action_.ball_y;
+                pet_.has_target = true;
+                pet_.step(now);
+                return;
+            case ActionState::Effect::Food:
+            case ActionState::Effect::Purr:
+                // Stay put; rendered visuals go on top in draw().
+                pet_.has_target = false;
+                if (pet_.fsm.state() != PetState::Idle) {
+                    pet_.fsm.set_state(PetState::Idle, now);
+                }
+                pet_.step(now);
+                return;
+            default: break;
+        }
+    }
 
     // Pomodoro gate: any time a Pomodoro session is running, the cat behavior
     // is dictated by the phase. The config-level `enable_pomodoro` flag only
@@ -307,43 +356,53 @@ void App::on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to) {
     const auto& persona = UserPersona::active();
     const std::string honor { persona.honorific() };
 
-    auto announce = [&](std::string_view title, std::string_view body,
-                        std::string_view bubble, std::string_view urgency) {
+    // For notifications we prefix the body with a cat emoji so it's clear
+    // the message is from aymm. Notification daemons render emoji well
+    // (they use the system font stack with proper shaping).
+    //
+    // For on-screen speech bubbles we deliberately keep ASCII text only —
+    // Cairo's toy text API doesn't do Pango-style font fallback, so emojis
+    // turn into tofu rectangles in the bubble. The bubble carries the
+    // mood; the system notification carries the cat icon.
+    auto announce = [&](std::string_view body, std::string_view bubble,
+                        std::string_view urgency,
+                        SpeechBubble::Style style = SpeechBubble::Style::Speech) {
         if (cfg_.pomodoro_show_notifications) {
-            notifier_.notify(title, body, urgency);
+            const std::string with_icon = "🐈 " + std::string(body);
+            notifier_.notify("aymm", with_icon, urgency);
         }
-        say(bubble);
+        say(bubble, std::chrono::milliseconds(4500), style);
     };
 
     // Entering Focus does NOT teleport the cat anymore — on_tick walks it
     // toward focus_corner_position() and only sets PetState::Sleep when it
-    // gets close enough. Phase-change handler just plays the announcement.
+    // gets close enough. We use Status (no tail) bubble style during focus
+    // because the cat is going to sleep — a speech bubble would imply it's
+    // talking while curled up in the basket.
 
     switch (to) {
         case PomodoroPhase::Focus:
             if (from == PomodoroPhase::Stopped) {
-                announce("aymm",
-                    "Focus session started" + honor + ".",
-                    "Focus time" + honor + " 🐾",
-                    "low");
+                announce("Focus session started" + honor + ".",
+                         "Focus time" + honor,
+                         "low",
+                         SpeechBubble::Style::Status);
             } else {
-                announce("aymm",
-                    "Back to focus" + honor + ". You've got this.",
-                    "Back to focus" + honor + " 🐾",
-                    "low");
+                announce("Back to focus" + honor + ". You've got this.",
+                         "Back to focus" + honor,
+                         "low",
+                         SpeechBubble::Style::Status);
             }
             break;
         case PomodoroPhase::Break:
-            announce("aymm",
-                "Your break awaits" + honor + ".",
-                "Break time" + honor + "!",
-                "normal");
+            announce("Your break awaits" + honor + ".",
+                     "Break time" + honor + "!",
+                     "normal");
             break;
         case PomodoroPhase::LongBreak:
-            announce("aymm",
-                "Long break time" + honor + " — go stretch.",
-                "Long break" + honor + " — stretch!",
-                "normal");
+            announce("Long break time" + honor + " - go stretch.",
+                     "Long break" + honor + " - stretch!",
+                     "normal");
             break;
         default: break;
     }
@@ -382,6 +441,10 @@ void App::draw(cairo_t* cr, int w, int h, int origin_x, int origin_y) {
                             pet_.fsm.frame());
     }
 
+    // Interactive action visuals (ball, food bowl, purring hearts) sit on
+    // top of the cat but below the speech bubble.
+    if (action_.active()) draw_action(cr);
+
     // Speech bubble on top of everything else.
     if (bubble_.active()) {
         bubble_.draw(cr, pet_.position.x, pet_.position.y);
@@ -401,7 +464,7 @@ std::string App::handle_request(const std::string& req) {
     }
     if (req == "pet:quit") {
         const std::string bye = "Goodbye" + std::string(persona.honorific()) + "!";
-        notifier_.notify("aymm", bye, "low");
+        notifier_.notify("aymm", "🐈 " + bye, "low");
         say(bye, std::chrono::milliseconds(2500));
         // Defer the actual quit so the bubble has a chance to render.
         // Two redraws at 30 Hz is ~67 ms; we give 2 s to be safe.
@@ -432,6 +495,102 @@ std::string App::handle_request(const std::string& req) {
     }
     if (req == "waybar-status") return waybar_json(pomodoro_, pet_visible_);
     return "error: unknown request";
+}
+
+void App::draw_action(cairo_t* cr) {
+    const auto now = ActionState::Clock::now();
+    const double p = action_.progress(now);
+    constexpr double kPi = 3.14159265358979323846;
+
+    cairo_save(cr);
+    switch (action_.current()) {
+        case ActionState::Effect::Ball: {
+            // Red ball at its position, with a small drop shadow.
+            cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
+            cairo_save(cr);
+            cairo_translate(cr, action_.ball_x, action_.ball_y + 8);
+            cairo_scale(cr, 1.0, 0.4);
+            cairo_arc(cr, 0, 0, 10, 0, 2 * kPi);
+            cairo_restore(cr);
+            cairo_fill(cr);
+
+            cairo_set_source_rgba(cr, 0.85, 0.18, 0.18, 1.0);
+            cairo_arc(cr, action_.ball_x, action_.ball_y, 10, 0, 2 * kPi);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgba(cr, 0.40, 0.08, 0.08, 0.85);
+            cairo_set_line_width(cr, 0.8);
+            cairo_stroke(cr);
+            // Tiny shine
+            cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.7);
+            cairo_arc(cr, action_.ball_x - 3, action_.ball_y - 3, 2.5, 0, 2 * kPi);
+            cairo_fill(cr);
+            break;
+        }
+        case ActionState::Effect::Food: {
+            // Brown bowl ellipse just below the cat with chunks of food.
+            const double bx = pet_.position.x;
+            const double by = pet_.position.y + 30;
+            cairo_set_source_rgba(cr, 0, 0, 0, 0.25);
+            cairo_save(cr);
+            cairo_translate(cr, bx, by + 4);
+            cairo_scale(cr, 1.0, 0.35);
+            cairo_arc(cr, 0, 0, 22, 0, 2 * kPi);
+            cairo_restore(cr);
+            cairo_fill(cr);
+            // Bowl
+            cairo_set_source_rgba(cr, 0.55, 0.35, 0.18, 1.0);
+            cairo_save(cr);
+            cairo_translate(cr, bx, by);
+            cairo_scale(cr, 1.0, 0.55);
+            cairo_arc(cr, 0, 0, 20, 0, kPi);
+            cairo_restore(cr);
+            cairo_fill_preserve(cr);
+            cairo_set_source_rgba(cr, 0.30, 0.18, 0.08, 0.9);
+            cairo_set_line_width(cr, 0.8);
+            cairo_stroke(cr);
+            // Food chunks (rust-colored circles)
+            cairo_set_source_rgba(cr, 0.75, 0.45, 0.20, 1.0);
+            for (int i = -2; i <= 2; ++i) {
+                cairo_arc(cr, bx + i * 5.5, by + 1, 2.2, 0, 2 * kPi);
+                cairo_fill(cr);
+            }
+            cairo_set_source_rgba(cr, 0.62, 0.36, 0.16, 1.0);
+            for (int i = -1; i <= 1; ++i) {
+                cairo_arc(cr, bx + i * 5.0, by + 5, 1.8, 0, 2 * kPi);
+                cairo_fill(cr);
+            }
+            break;
+        }
+        case ActionState::Effect::Purr: {
+            // Three pink hearts floating up + slightly to the side.
+            auto path_heart = [&](double cx, double cy, double r) {
+                cairo_new_sub_path(cr);
+                cairo_arc(cr, cx - r * 0.55, cy - r * 0.30, r * 0.65, 0, 2 * kPi);
+                cairo_new_sub_path(cr);
+                cairo_arc(cr, cx + r * 0.55, cy - r * 0.30, r * 0.65, 0, 2 * kPi);
+                cairo_new_sub_path(cr);
+                cairo_move_to(cr, cx - r * 0.95, cy);
+                cairo_line_to(cr, cx + r * 0.95, cy);
+                cairo_line_to(cr, cx,            cy + r * 1.25);
+                cairo_close_path(cr);
+            };
+            for (int i = 0; i < 3; ++i) {
+                const double phase = p + i * 0.33;
+                const double t = phase - std::floor(phase);  // 0..1 each cycle
+                const double drift_x = std::sin((p + i) * 2.5) * 12.0 + (i - 1) * 8.0;
+                const double y_off   = -20.0 - t * 50.0;
+                const double a       = std::max(0.0, 1.0 - t);
+                const double size    = 4.0 + t * 1.5;
+                cairo_set_source_rgba(cr, 0.94, 0.40, 0.55, a);
+                path_heart(pet_.position.x + drift_x, pet_.position.y + y_off, size);
+                cairo_fill(cr);
+            }
+            break;
+        }
+        default: break;
+    }
+    cairo_restore(cr);
+    (void)p;
 }
 
 } // namespace aymm

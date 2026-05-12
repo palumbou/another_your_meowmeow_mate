@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aymm/ActionState.hpp"
 #include "aymm/Animation.hpp"
 #include "aymm/Config.hpp"
 #include "aymm/ControlSocket.hpp"
@@ -35,10 +36,12 @@ public:
 private:
     void on_tick();
     void draw(cairo_t* cr, int w, int h, int origin_x, int origin_y);
+    void draw_action(cairo_t* cr);
     void on_pomodoro_phase_changed(PomodoroPhase from, PomodoroPhase to);
     Vec2 focus_corner_position() const;
     void say(std::string_view text,
-             std::chrono::milliseconds duration = std::chrono::milliseconds(4500));
+             std::chrono::milliseconds duration = std::chrono::milliseconds(4500),
+             SpeechBubble::Style style = SpeechBubble::Style::Speech);
 
     Config                  cfg_;
     AppOptions              opts_;
@@ -55,6 +58,8 @@ private:
     ControlSocket           control_;
     Notifier                notifier_;
     SpeechBubble            bubble_;
+    ActionState             action_;
+    int                     last_region_gx_ = -10000, last_region_gy_ = -10000;
     bool                    pet_visible_ = true;
 };
 
