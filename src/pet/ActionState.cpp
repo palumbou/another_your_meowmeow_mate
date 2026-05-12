@@ -25,8 +25,10 @@ void ActionState::trigger_next(TimePoint now, double cat_x, double cat_y,
     started_at_  = now;
 
     // Position the action prop relative to the cat. Bowl and post go in
-    // FRONT of the cat (which side that is depends on facing direction).
-    const double dx_front = cat_facing_east ? 38.0 : -38.0;
+    // FRONT of the cat. The procedural cat at scale 4 reaches roughly
+    // x ≈ cat_x + 54 at the right edge of the head + whiskers, so props
+    // need a wider offset than that to avoid overlapping the face.
+    const double sign = cat_facing_east ? 1.0 : -1.0;
     switch (current_) {
         case Effect::Ball: {
             // Toss the yarn ball in a random direction, 130-180 px away.
@@ -39,14 +41,18 @@ void ActionState::trigger_next(TimePoint now, double cat_x, double cat_y,
             break;
         }
         case Effect::Food:
-            // Bowl in front of the cat, slightly below the body line so the
-            // cat 'leans in' to eat.
-            prop_x = cat_x + dx_front;
+            // Bowl sits low (cy+18), where the cat's belly is — the cat
+            // leans down to eat. 38 px to the side keeps it visible in
+            // front without overlapping the head.
+            prop_x = cat_x + sign * 38.0;
             prop_y = cat_y + 18.0;
             break;
         case Effect::Scratch:
-            // Scratching post stands in front of the cat.
-            prop_x = cat_x + dx_front;
+            // Scratching post is tall (extends from cy-35 to cy+20) so it
+            // needs a much wider clearance than the bowl — otherwise the
+            // post crosses the cat's face. 75 px keeps the post body well
+            // beyond the head + whiskers.
+            prop_x = cat_x + sign * 75.0;
             prop_y = cat_y;
             break;
         case Effect::Purr:
